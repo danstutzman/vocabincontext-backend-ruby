@@ -1,0 +1,29 @@
+:css
+  body { margin: 0; font-family: sans-serif; background-color: gray; }
+  form { width: 300px; padding: 10px; margin: 0 auto; background-color: white; text-align: center; }
+  label { display: block; font-size: 20pt; text-align: center; margin-bottom: 10px; }
+  input#query { font-size: 20pt; width: 200px; height: 50px; border: 1px #777 solid; }
+  /* input#query { -webkit-appearance:caret; } */
+  button { width: 50px; height: 50px; background: #777 url('magnifying_glass.png') no-repeat 8px 8px; background-size: 30px 30px; vertical-align: bottom; }
+  div#examples { margin-top: 20px; }
+  .spanish { font-style: italic; }
+  a { text-decoration: none; }
+
+%html
+  %head
+    %meta(charset='UTF-8')
+    %meta(name="viewport" content="width=320, user-scalable=no, minimal-ui")
+  %body
+    %form(method='POST' action='/')
+      %label(for='query')
+        Enter a Spanish word
+        %br
+        to remember better:
+      %input.spanish#query(onfocus='function () { window.scrollTo(0, 0) }')
+
+      %button
+      %div#examples
+        Or try an example:
+        %a.spanish(href='/word/supe') supe
+    :javascript
+      document.getElementById('query').focus();
