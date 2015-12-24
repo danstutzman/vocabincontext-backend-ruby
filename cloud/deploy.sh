@@ -1,4 +1,5 @@
 #!/bin/bash -ex
+cd `dirname $0`
 
 INSTANCE_IP=`tugboat droplets | grep vocabincontext | egrep -oh "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+"`
 echo INSTANCE_IP=$INSTANCE_IP
