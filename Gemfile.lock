@@ -1,28 +1,61 @@
-GIT
-  remote: git://github.com/sinatra/sinatra.git
-  revision: 8035f839fd8a63fd3791c901cf5ed09617e72e13
-  specs:
-    sinatra (1.4.6)
-      rack (~> 1.5, >= 1.5.4, < 1.6)
-      rack-protection (~> 1.4)
-      tilt (>= 1.3, < 3)
-
 GEM
   remote: http://rubygems.org/
   specs:
+    activemodel (4.2.5)
+      activesupport (= 4.2.5)
+      builder (~> 3.1)
+    activerecord (4.2.5)
+      activemodel (= 4.2.5)
+      activesupport (= 4.2.5)
+      arel (~> 6.0)
+    activerecord-postgresql-adapter (0.0.1)
+      pg
+    activesupport (4.2.5)
+      i18n (~> 0.7)
+      json (~> 1.7, >= 1.7.7)
+      minitest (~> 5.1)
+      thread_safe (~> 0.3, >= 0.3.4)
+      tzinfo (~> 1.1)
+    arel (6.0.3)
+    builder (3.2.2)
     haml (4.0.7)
       tilt
-    rack (1.5.5)
+    i18n (0.7.0)
+    json (1.8.3)
+    kgio (2.10.0)
+    minitest (5.8.3)
+    pg (0.18.4)
+    rack (1.6.4)
     rack-protection (1.5.3)
       rack
+    raindrops (0.15.0)
+    sinatra (1.4.6)
+      rack (~> 1.4)
+      rack-protection (~> 1.4)
+      tilt (>= 1.3, < 3)
+    sinatra-activerecord (2.0.9)
+      activerecord (>= 3.2)
+      sinatra (~> 1.0)
+    thread_safe (0.3.5)
     tilt (2.0.1)
+    tzinfo (1.2.2)
+      thread_safe (~> 0.1)
+    unicorn (5.0.1)
+      kgio (~> 2.6)
+      rack
+      raindrops (~> 0.7)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
+  activerecord (~> 4.2, >= 4.2.5)
+  activerecord-postgresql-adapter
   haml
-  sinatra!
+  pg
+  sinatra
+  sinatra-activerecord
+  unicorn
 
 BUNDLED WITH
    1.11.2

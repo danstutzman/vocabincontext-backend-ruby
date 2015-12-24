@@ -31,7 +31,8 @@ if [ ! -e vocabincontext ]; then
 fi
 cd /var/www/vocabincontext
 gem2.0 install bundler
-sudo sudo -u web bundle install --path vendor
+#sudo sudo -u web bundle install --path vendor
+sudo sudo -u web bundle install --deployment
 
 tee /var/www/vocabincontext/unicorn.rb <<EOF2
 user "web", "web"
@@ -40,8 +41,9 @@ pid "/var/www/vocabincontext/unicorn.pid"
 stderr_path "/var/log/unicorn.log"
 stdout_path "/var/log/unicorn.log"
 listen "/tmp/unicorn.vocabincontext.sock"
-worker_processes 2
-timeout 30
+worker_processes 1
+timeout 10
+preload_app true
 EOF2
 
 touch /var/log/unicorn.log
@@ -78,7 +80,7 @@ sudo tee /etc/init.d/unicorn <<"EOF2"
 TIMEOUT=30
 APP_NAME=vocabincontext
 APP_ROOT=/var/www/vocabincontext
-PID=/tmp/unicorn.$APP_NAME.pid
+PID=/var/www/vocabincontext/unicorn.pid
 CMD="cd $APP_ROOT && bundle exec unicorn -c $APP_ROOT/unicorn.rb -E production -D"
 USER=web
 action="$1"
@@ -156,5 +158,10 @@ EOF2
 
 chmod +x /etc/init.d/unicorn
 /usr/sbin/update-rc.d -f unicorn defaults
-sudo service unicorn restart
+sudo service unicorn stop
+sudo service unicorn start
 sudo service nginx restart
+
+sudo apt-get install -y postgresql postgresql-client-common libpq-dev
+sudo sudo -u postgres createuser -s -e vocabincontext
+echo "ALTER USER vocabincontext WITH PASSWORD 'vocabincontext'" | sudo sudo -u postgres psql

@@ -14,12 +14,12 @@
     %meta(charset='UTF-8')
     %meta(name="viewport" content="width=320, user-scalable=no, minimal-ui")
   %body
-    %form(method='POST' action='/')
+    %form(method='GET' action='/results')
       %label(for='query')
         Enter a Spanish word
         %br
         to remember better:
-      %input.spanish#query(onfocus='function () { window.scrollTo(0, 0) }')
+      %input.spanish#query(name='q' onfocus='function () { window.scrollTo(0, 0) }')
 
       %button
       %div#examples
