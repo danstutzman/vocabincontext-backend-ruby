@@ -9,5 +9,6 @@ chown -R web:web /var/www/vocabincontext
 cd /var/www/vocabincontext
 sudo sudo -u web bundle install --deployment
 sudo service unicorn stop || true
+sleep 1
 sudo service unicorn start
 EOF
