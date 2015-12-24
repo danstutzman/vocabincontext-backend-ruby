@@ -18,16 +18,16 @@ class BackendApp < Sinatra::Base
     query = params['q']
     word_id = Word.find_by_word(query).word_id
     line_words = LineWord.where(word_id: word_id)
-    @lines = Line.where('line_id IN (?)', line_words.map { |lw| lw.line_id })
+    lines = Line.where('line_id IN (?)', line_words.map { |lw| lw.line_id }.uniq)
     line_by_line_id = {}
-    @lines.each do |line|
+    lines.each do |line|
       line_by_line_id[line.line_id] = line
       line.line_words = []
     end
     line_words.each do |line_word|
       line_by_line_id[line_word.line_id].line_words.push line_word
     end
-    @lines.each do |line|
+    lines.each do |line|
       line.line_html = line.line
       line.line_words.each do |line_word|
         line.line_html[line_word.begin_index...line_word.begin_index] += '<b>'
@@ -42,6 +42,12 @@ class BackendApp < Sinatra::Base
         end
       end
     end
+
+    @songs = Song.where('song_id IN (?)', lines.map { |line| line.song_id }.uniq)
+    @songs.each do |song|
+      song.lines = lines.select { |line| line.song_id == song.song_id }
+    end
+
     haml :results
   end
 end

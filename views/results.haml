@@ -1,3 +1,5 @@
-- @lines.each do |line|
-  %li
-    != "&ldquo;#{line.line}&rdquo;"
+- @songs.each do |song|
+  %li= song.song_name
+  %ul
+    - song.lines.each do |line|
+      %li!= "&ldquo;#{line.line}&rdquo;"

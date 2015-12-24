@@ -13,3 +13,9 @@ end
 
 class LineWord < ActiveRecord::Base
 end
+
+class Song < ActiveRecord::Base
+  self.primary_key = 'song_id'
+
+  attr :lines, true
+end
