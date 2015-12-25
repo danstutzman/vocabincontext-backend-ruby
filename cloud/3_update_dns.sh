@@ -1,10 +1,7 @@
 #!/bin/bash -ex
 
-IP_ADDRESS="$1"
-if [ "$IP_ADDRESS" == "" ]; then
-  echo 1>&2 "Specify IP_ADDRESS as first parameter"
-  exit 1
-fi
+INSTANCE_IP=`tugboat droplets | grep vocabincontext | egrep -oh "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+" || true`
+echo INSTANCE_IP=$INSTANCE_IP
 
 ZONE_ID=`aws route53 list-hosted-zones | python -c '
 import json, sys
@@ -19,14 +16,14 @@ tee new_record_set.json <<EOF
   "Comment": "A new record set for the zone.",
   "Changes": [
     {
-      "Action": "CREATE",
+      "Action": "UPSERT",
       "ResourceRecordSet": {
         "Name": "digitalocean.vocabincontext.com.",
         "Type": "A",
         "TTL": 60,
         "ResourceRecords": [
           {
-            "Value": "$IP_ADDRESS"
+            "Value": "$INSTANCE_IP"
           }
         ]
       }
@@ -37,3 +34,5 @@ EOF
 
 aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch file://$PWD/new_record_set.json
 rm new_record_set.json
+
+aws route53 list-resource-record-sets --hosted-zone-id $ZONE_ID
