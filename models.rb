@@ -19,3 +19,7 @@ class Song < ActiveRecord::Base
 
   attr :lines, true
 end
+
+class Alignment < ActiveRecord::Base
+  self.primary_key = 'alignment_id'
+end

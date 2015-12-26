@@ -50,4 +50,54 @@ class BackendApp < Sinatra::Base
 
     haml :results
   end
+
+  post '/reserve-alignment', provides: :json do
+    machine_num = Integer(params['machine_num'])
+    old_alignment_id = params['old_alignment_id']
+    old_result_json = params['old_result_json']
+
+    if old_alignment_id != ''
+      old_alignment = Alignment.find(old_alignment_id)
+      old_alignment.result_json = old_result_json
+      old_alignment.save!
+    end
+
+    reservation_expires_after_n_seconds = 60 * 5
+    output = ActiveRecord::Base.connection.execute %Q[
+      UPDATE alignments
+      SET reserved_by_machine_num = #{machine_num}, reserved_at = NOW()
+      WHERE alignment_id IN (
+        SELECT alignment_id
+        FROM alignments
+        WHERE (reserved_at IS NULL OR extract(epoch from now() - reserved_at) >
+          #{reservation_expires_after_n_seconds})
+        AND result_json IS NULL
+        ORDER BY alignment_id ASC
+        LIMIT 1
+        FOR UPDATE
+      )
+      RETURNING alignment_id;
+    ]
+    alignments = output.map { |row|
+      alignment_id = output[0]['alignment_id']
+      alignment = Alignment.find(alignment_id)
+      song = Song.find(alignment.song_id)
+      line_words = LineWord.where(song_id: alignment.song_id).
+        where("num_word_in_song >= ?", alignment.begin_num_word_in_song).
+        where("num_word_in_song < ?",  alignment.end_num_word_in_song).
+        order(:num_word_in_song)
+      words = Word.where('word_id IN (?)', line_words.map { |lw| lw.word_id }.uniq)
+      word_by_word_id = {}
+      words.each { |word| word_by_word_id[word.word_id] = word }
+      text = line_words.map { |lw| word_by_word_id[lw.word_id].word }.join(' ')
+      {
+        alignment_id:          alignment_id,
+        text:                  text,
+        begin_seconds:         alignment.begin_seconds,
+        end_seconds:           alignment.end_seconds,
+        song_youtube_video_id: song.youtube_video_id,
+      }
+    }
+    alignments[0].to_json
+  end
 end

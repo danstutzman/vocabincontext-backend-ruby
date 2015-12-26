@@ -111,29 +111,7 @@ sudo apt-get install -y ant
 ant
 ./openfst2java.sh ../../model model.fst.ser
 
-sudo apt-get install -y python-pip
+sudo apt-get install -y python-pip ffmpeg sox ruby-dev
 sudo pip install --upgrade youtube_dl
-VIDEO_ID=SqWrliMzrW8
-youtube-dl "http://www.youtube.com/watch?v=$VIDEO_ID" --id
-sudo apt-get install -y ffmpeg
-ffmpeg -y -i "$VIDEO_ID.mp4" -vn -acodec copy "$VIDEO_ID.m4a" -nostdin
-ffmpeg -i "$VIDEO_ID.m4a" "$VIDEO_ID.wav" -nostdin
-
-sudo apt-get install -y sox
-sox $VIDEO_ID.wav short.wav channels 1 rate 16k trim 17 10
-tee short.txt <<EOF2
-El otro día me dijiste que me quieres mira como eres
-tu bato es camarada mío y quiero que te esperes
-para que tu y el se separen de un final
-EOF2
-
-java -cp \
-  sphinx4/sphinx4-samples/build/libs/sphinx4-samples-5prealpha-SNAPSHOT.jar \
-  edu.cmu.sphinx.demo.aligner.AlignerDemo \
-  short.wav \
-  short.txt \
-  voxforge-es-0.2/model_parameters/voxforge_es_sphinx.cd_ptm_3000 \
-  voxforge-es-0.2/etc/voxforge_es_sphinx.dic \
-  g2p/fst/model.fst.ser
-
+sudo gem install rest-client
 EOF
