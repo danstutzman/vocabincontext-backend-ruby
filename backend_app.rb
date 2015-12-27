@@ -1,3 +1,4 @@
+require 'json'
 require './models'
 require 'sinatra/activerecord'
 require 'sinatra/base'
@@ -60,6 +61,29 @@ class BackendApp < Sinatra::Base
       old_alignment = Alignment.find(old_alignment_id)
       old_alignment.result_json = old_result_json
       old_alignment.save!
+
+      words = JSON.parse(old_result_json)
+
+      last_aligned_pair = nil
+      words.each_with_index do |word, i|
+        if words[i].size == 3 &&
+            i + 1 < words.size && words[i + 1].size == 3 &&
+            (words[i][2] - words[i + 1][1]).abs <= 30 # gap between words <= 30ms
+          last_aligned_pair = i
+        end
+      end
+      if last_aligned_pair != nil
+        new_alignment = Alignment.new
+        new_alignment.song_id = old_alignment.song_id
+        new_alignment.begin_seconds =
+          old_alignment.begin_seconds + (words[last_aligned_pair][1] * 0.001)
+        new_alignment.end_seconds = new_alignment.begin_seconds + 5
+        new_alignment.begin_num_word_in_song =
+          old_alignment.begin_num_word_in_song + last_aligned_pair
+        new_alignment.end_num_word_in_song =
+          new_alignment.begin_num_word_in_song + 15
+        new_alignment.save!
+      end
     end
 
     reservation_expires_after_n_seconds = 60 * 5

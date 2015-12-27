@@ -65,21 +65,28 @@ while true
     'g2p/fst/model.fst.ser']
   puts command.join(' ')
   out, err, st = Open3.capture3(*command)
+  puts out
 
-  words = []
+  result = []
+  expected_words = alignment['text'].split(' ')
   out.split("\n").each do |line|
-    if !line.start_with?('-')
-      match = line.match(/^([ +]) (.*?) +\[([0-9]+):([0-9]+)\]$/) \
-        or raise "Can't parse line #{line}"
-      words.push({
-        type: (match[1] == '+') ? 'added' : 'present',
-        word: match[2],
-        begin_millis: match[3].to_i, # + beginning_millis,
-        end_millis: match[4].to_i, # + beginning_millis,
-      })
+    match = line.match(/^([ +-]) (.*?)( *\[([0-9]+):([0-9]+)\])?$/) \
+      or raise "Can't parse line #{line}"
+    if match[1] == '+'
+      # skip it
+    else
+      expected_word = expected_words.shift
+      raise "Expected '#{expected_word}' but got '#{match[2]}'" \
+        if expected_word != match[2]
+      if match[1] == ' '
+        result.push [match[2], match[4].to_i, match[5].to_i]
+      elsif match[1] == '-'
+        result.push [match[2]]
+      else raise "Unexpected beginning of line '#{match[1]}'"
+      end
     end
   end # next alignment
 
   old_alignment_id = alignment['alignment_id']
-  old_result = words
+  old_result = result
 end # repeat while
