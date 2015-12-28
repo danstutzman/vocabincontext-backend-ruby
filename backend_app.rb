@@ -66,9 +66,7 @@ class BackendApp < Sinatra::Base
 
       last_aligned_pair = nil
       words.each_with_index do |word, i|
-        if words[i].size == 3 &&
-            i + 1 < words.size && words[i + 1].size == 3 &&
-            (words[i][2] - words[i + 1][1]).abs <= 30 # gap between words <= 30ms
+        if words[i].size == 3 && words[i][0].size > 3 && i > 0
           last_aligned_pair = i
         end
       end
