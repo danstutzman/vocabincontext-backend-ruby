@@ -1,3 +1,4 @@
 .DS_Store
 /.bundle/config
 /vendor/bundle
+/cloud/vocabincontext-media-excerpts-uploader.csv

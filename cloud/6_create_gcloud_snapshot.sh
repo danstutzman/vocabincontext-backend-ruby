@@ -1,27 +1,12 @@
 #!/bin/bash -ex
 
-INSTANCE_NAME=speech2
+gcloud compute disks create speech-snapshot2 --size 10 --image ubuntu-15-04
 
-INSTANCE_IP=`gcloud compute instances list "$INSTANCE_NAME" --format text | grep 'networkInterfaces\[0\].accessConfigs\[0\].natIP' | awk '{print $2}'`;
-echo "INSTANCE_IP=$INSTANCE_IP"
+gcloud compute instances create speech-snapshot \
+  --disk name=speech-snapshot,boot=yes \
+  --machine-type n1-highcpu-2
 
-if [ "$INSTANCE_IP" == "" ]; then
-  gcloud compute instances create "$INSTANCE_NAME" \
-    --image ubuntu-15-04 \
-    --machine-type n1-standard-1 \
-    --preemptible
-else
-  gcloud compute instances start "$INSTANCE_NAME"
-fi
-
-while true; do
-  if [ "`gcloud compute ssh speech2 -C echo true`" == true ]; then
-    break
-  fi
-  sleep 3
-done
-
-gcloud compute ssh $INSTANCE_NAME <<EOF
+gcloud compute ssh speech-snapshot <<EOF
 set -ex
 
 sudo apt-get install -y mosh
@@ -33,7 +18,7 @@ echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true" | 
 sudo apt-get install -y oracle-java8-installer
 EOF
 
-gcloud compute ssh $INSTANCE_NAME <<EOF
+gcloud compute ssh speech-snapshot <<EOF
 sudo apt-get install -y git
 if [ ! -e sphinx4 ]; then
   git clone http://github.com/cmusphinx/sphinx4
@@ -48,7 +33,7 @@ JAVA_HOME=/usr/lib/jvm/java-8-oracle gradle jar
 cd
 EOF
 
-gcloud compute ssh $INSTANCE_NAME <<"EOF"
+gcloud compute ssh speech-snapshot <<"EOF"
 set -ex
 
 sudo apt-get install -y autoconf libtool bison python-dev swig make g++
@@ -115,3 +100,8 @@ sudo apt-get install -y python-pip ffmpeg sox ruby-dev
 sudo pip install --upgrade youtube_dl
 sudo gem install rest-client
 EOF
+
+gcloud compute instances stop speech-snapshot
+gcloud compute disks snapshot speech-snapshot --snapshot-names speech-snapshot --zone us-central1-b
+gcloud compute images create speech-snapshot --source-disk speech-snapshot
+gcloud compute instances delete speech-snapshot
