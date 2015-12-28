@@ -70,7 +70,7 @@ class BackendApp < Sinatra::Base
           last_aligned_pair = i
         end
       end
-      if last_aligned_pair != nil
+      if last_aligned_pair != nil && last_aligned_pair > 0
         new_alignment = Alignment.new
         new_alignment.song_id = old_alignment.song_id
         new_alignment.begin_seconds =
