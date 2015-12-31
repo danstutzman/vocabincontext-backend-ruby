@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 
-gcloud compute disks create speech-snapshot2 --size 10 --image ubuntu-15-04
+gcloud compute disks create speech-snapshot --size 10 --image ubuntu-15-04
 
 gcloud compute instances create speech-snapshot \
   --disk name=speech-snapshot,boot=yes \
@@ -101,7 +101,37 @@ sudo pip install --upgrade youtube_dl
 sudo gem install rest-client
 EOF
 
-gcloud compute instances stop speech-snapshot
-gcloud compute disks snapshot speech-snapshot --snapshot-names speech-snapshot --zone us-central1-b
-gcloud compute images create speech-snapshot --source-disk speech-snapshot
+gcloud compute ssh speech-snapshot <<EOF
+set -ex
+if [ ! -e separateLeadStereo ]; then
+  mkdir separateLeadStereo
+  cd separateLeadStereo
+  curl http://www.durrieu.ch/research/jstsp2010-media/separateLeadStereo_20110111T1411.zip > separateLeadStereo.zip
+  unzip separateLeadStereo.zip
+else
+  cd separateLeadStereo
+fi
+sudo apt-get install -y python-numpy python-scipy
+if [ ! -e separateLeadStereoParam.old ]; then
+  cp separateLeadStereoParam.py separateLeadStereoParam.old
+fi
+cat separateLeadStereoParam.old | sed 's/^if np.double/if False and np.double/' > separateLeadStereoParam.py
+cd
+EOF
+
+gcloud compute ssh speech-snapshot <<EOF
+sudo pip install awscli
+if [ ! -e aws-cli ]; then
+  git clone https://github.com/aws/aws-cli.git
+fi
+EOF
+
+ruby write-s3-credentials.rb
+
+# Have to delete the instance to take an image of its disk
 gcloud compute instances delete speech-snapshot
+gcloud compute images delete speech-snapshot -q
+gcloud compute images create speech-snapshot --source-disk speech-snapshot
+gcloud compute instances create speech-snapshot \
+  --disk name=speech-snapshot,boot=yes --machine-type n1-highcpu-2
+gcloud compute instances stop speech-snapshot
