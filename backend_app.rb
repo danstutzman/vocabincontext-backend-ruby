@@ -17,8 +17,14 @@ class BackendApp < Sinatra::Base
 
   get '/results' do
     query = params['q']
-    word_id = Word.find_by_word(query).word_id
-    line_words = LineWord.where(word_id: word_id)
+    if query == ''
+      line_words = LineWord.joins(:line
+        ).where('lines.audio_excerpt_filename is not null')
+    else
+      word_id = Word.find_by_word(query).word_id
+      line_words = LineWord.joins(:line
+        ).where('lines.audio_excerpt_filename is not null').where(word_id: word_id)
+    end
     lines = Line.where('line_id IN (?)', line_words.map { |lw| lw.line_id }.uniq)
     line_by_line_id = {}
     lines.each do |line|

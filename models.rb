@@ -12,6 +12,7 @@ class Word < ActiveRecord::Base
 end
 
 class LineWord < ActiveRecord::Base
+  belongs_to :line
 end
 
 class Song < ActiveRecord::Base
