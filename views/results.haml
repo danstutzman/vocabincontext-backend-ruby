@@ -4,4 +4,5 @@
     - song.lines.each do |line|
       %li!= "&ldquo;#{line.line}&rdquo;"
       - if line.audio_excerpt_filename
-        %a{href: "http://vocabincontext-media-excerpts.s3-website-us-east-1.amazonaws.com/#{line.audio_excerpt_filename}"} Play
+        %audio(controls)
+          %source{type:'audio/aac', src:"http://vocabincontext-media-excerpts.s3-website-us-east-1.amazonaws.com/#{line.audio_excerpt_filename}"}
