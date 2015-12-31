@@ -52,74 +52,20 @@ class BackendApp < Sinatra::Base
     haml :results
   end
 
-  post '/reserve-alignment', provides: :json do
-    machine_num = Integer(params['machine_num'])
-    old_alignment_id = params['old_alignment_id']
-    old_result_json = params['old_result_json']
+  get '/video-id-to-lines/:video_id.json', provides: :json do
+    video_id = params[:video_id]
+    song = Song.find_by_youtube_video_id(video_id) or raise Sinatra::NotFound
+    lines = Line.where(song_id: song.song_id).order(:line_id)
+    lines.to_json
+  end
 
-    if old_alignment_id != ''
-      old_alignment = Alignment.find(old_alignment_id)
-      old_alignment.result_json = old_result_json
-      old_alignment.save!
-
-      words = JSON.parse(old_result_json)
-
-      last_aligned_pair = nil
-      words.each_with_index do |word, i|
-        if words[i].size == 3 && words[i][0].size > 3 && i > 0
-          last_aligned_pair = i
-        end
-      end
-      if last_aligned_pair != nil && last_aligned_pair > 0
-        new_alignment = Alignment.new
-        new_alignment.song_id = old_alignment.song_id
-        new_alignment.begin_seconds =
-          old_alignment.begin_seconds + (words[last_aligned_pair][1] * 0.001)
-        new_alignment.end_seconds = new_alignment.begin_seconds + 5
-        new_alignment.begin_num_word_in_song =
-          old_alignment.begin_num_word_in_song + last_aligned_pair
-        new_alignment.end_num_word_in_song =
-          new_alignment.begin_num_word_in_song + 15
-        new_alignment.save!
-      end
+  post '/upload-excerpts' do
+    updated_lines = JSON.parse(request.body.read)
+    updated_lines.each do |updated_line|
+      line = Line.find(updated_line['line_id'])
+      line.audio_excerpt_filename = updated_line['audio_excerpt_filename']
+      line.save!
     end
-
-    reservation_expires_after_n_seconds = 60 * 5
-    output = ActiveRecord::Base.connection.execute %Q[
-      UPDATE alignments
-      SET reserved_by_machine_num = #{machine_num}, reserved_at = NOW()
-      WHERE alignment_id IN (
-        SELECT alignment_id
-        FROM alignments
-        WHERE (reserved_at IS NULL OR extract(epoch from now() - reserved_at) >
-          #{reservation_expires_after_n_seconds})
-        AND result_json IS NULL
-        ORDER BY alignment_id ASC
-        LIMIT 1
-        FOR UPDATE
-      )
-      RETURNING alignment_id;
-    ]
-    alignments = output.map { |row|
-      alignment_id = output[0]['alignment_id']
-      alignment = Alignment.find(alignment_id)
-      song = Song.find(alignment.song_id)
-      line_words = LineWord.where(song_id: alignment.song_id).
-        where("num_word_in_song >= ?", alignment.begin_num_word_in_song).
-        where("num_word_in_song < ?",  alignment.end_num_word_in_song).
-        order(:num_word_in_song)
-      words = Word.where('word_id IN (?)', line_words.map { |lw| lw.word_id }.uniq)
-      word_by_word_id = {}
-      words.each { |word| word_by_word_id[word.word_id] = word }
-      text = line_words.map { |lw| word_by_word_id[lw.word_id].word }.join(' ')
-      {
-        alignment_id:          alignment_id,
-        text:                  text,
-        begin_seconds:         alignment.begin_seconds,
-        end_seconds:           alignment.end_seconds,
-        song_youtube_video_id: song.youtube_video_id,
-      }
-    }
-    alignments[0].to_json
+    'OK'
   end
 end
