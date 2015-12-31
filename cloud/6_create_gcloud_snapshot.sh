@@ -129,8 +129,8 @@ EOF
 ruby write-s3-credentials.rb
 
 # Have to delete the instance to take an image of its disk
-gcloud compute instances delete speech-snapshot
-gcloud compute images delete speech-snapshot -q
+gcloud compute instances delete speech-snapshot -q
+gcloud compute images delete speech-snapshot -q || true
 gcloud compute images create speech-snapshot --source-disk speech-snapshot
 gcloud compute instances create speech-snapshot \
   --disk name=speech-snapshot,boot=yes --machine-type n1-highcpu-2
