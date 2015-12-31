@@ -9,21 +9,16 @@
   .spanish { font-style: italic; }
   a { text-decoration: none; }
 
-%html
-  %head
-    %meta(charset='UTF-8')
-    %meta(name="viewport" content="width=320, user-scalable=no, minimal-ui")
-  %body
-    %form(method='GET' action='/results')
-      %label(for='query')
-        Enter a Spanish word
-        %br
-        to remember better:
-      %input.spanish#query(name='q' onfocus='function () { window.scrollTo(0, 0) }')
+%form(method='GET' action='/results')
+  %label(for='query')
+    Enter a Spanish word
+    %br
+    to remember better:
+  %input.spanish#query(name='q' onfocus='function () { window.scrollTo(0, 0) }')
 
-      %button
-      %div#examples
-        Or try an example:
-        %a.spanish(href='/word/supe') supe
-    :javascript
-      document.getElementById('query').focus();
+  %button
+  %div#examples
+    Or try an example:
+    %a.spanish(href='/word/supe') supe
+:javascript
+  document.getElementById('query').focus();
