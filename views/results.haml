@@ -4,5 +4,5 @@
     - song.lines.each do |line|
       %li!= "&ldquo;#{line.line}&rdquo;"
       - if line.audio_excerpt_filename
-        %audio(controls)
+        %audio(controls onClick='var a = event.target; if (a.paused) a.play(); else a.pause();')
           %source{type:'audio/aac', src:"http://vocabincontext-media-excerpts.s3-website-us-east-1.amazonaws.com/#{line.audio_excerpt_filename}"}
