@@ -74,4 +74,23 @@ class BackendApp < Sinatra::Base
     end
     'OK'
   end
+
+  get '/manually-align/:video_id' do
+    @song = Song.find_by_youtube_video_id(params[:video_id])
+    @song.lines = Line.where(song_id: @song.song_id).order(:line_id)
+    haml :manually_align
+  end
+
+  post '/manually-align/:video_id' do
+    data = JSON.parse(request.env['rack.input'].read)
+    @song = Song.find_by_youtube_video_id(params[:video_id])
+    @song.lines = Line.where(song_id: @song.song_id).order(:line_id)
+    @song.lines.each_with_index do |line, line_num|
+      if data[line_num]
+        line.end_millis   = data[line_num]['endMillis']
+        line.save!
+      end
+    end
+    haml :manually_align
+  end
 end
