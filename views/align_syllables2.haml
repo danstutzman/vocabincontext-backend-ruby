@@ -1,0 +1,80 @@
+%form(method='POST')
+  %textarea(id='text' rows='50' cols='50' style='float:right; font-size:14pt')= @text
+
+  %label Begin syllable
+  %br
+  %input(id='begin_syllable' name='begin_syllable')
+  %input(id='begin_ms' name='begin_ms')
+  %br
+  %br
+
+  %label End syllable
+  %br
+  %input(id='end_syllable' name='end_syllable')
+  %input(id='end_ms' name='end_ms')
+  %br
+  %br
+
+  %button(id='preview') Preview
+  %br
+  %br
+
+  %label Selected text
+  %br
+  %textarea(id='selected_text' name='selected_text' rows='3' cols='50')
+  %input(type='hidden' id='begin_char' name='begin_char')
+  %input(type='hidden' id='end_char' name='end_char')
+  %br
+  %br
+
+  %input(type='submit')
+
+  %table
+    - @clips.each_with_index do |clip, i|
+      %tr
+        %td
+          %button{onclick: "new Audio('/excerpt.wav?begin_millis=#{clip.begin_ms}&end_millis=#{clip.end_ms}').play(); return false;"} Play
+        %td= clip.rough_begin_syllable
+        %td= clip.rough_end_syllable
+        %td= clip.begin_ms / 1000.0
+        %td= clip.end_ms / 1000.0
+        %td= @text[clip.begin_char...clip.end_char]
+
+%script
+  != "syllables = JSON.parse('#{JSON.dump(@syllables.map { |s| s.serializable_hash })}');"
+
+:javascript
+  audio = null;
+  document.getElementById('begin_syllable').addEventListener('blur', function(e) {
+    var beginSyllableNum = document.getElementById('begin_syllable').value;
+    if (beginSyllableNum) {
+      var beginMs = syllables[beginSyllableNum].begin_ms;
+      document.getElementById('begin_ms').value = beginMs;
+    }
+  });
+  document.getElementById('end_syllable').addEventListener('blur', function(e) {
+    var endSyllableNum = document.getElementById('end_syllable').value;
+    if (endSyllableNum) {
+      var endMs = syllables[endSyllableNum].end_ms;
+      document.getElementById('end_ms').value = endMs;
+    }
+  });
+  document.getElementById('preview').addEventListener('click', function(e) {
+    e.preventDefault();
+    var beginMs = document.getElementById('begin_ms').value;
+    var endMs = document.getElementById('end_ms').value;
+    if (audio) {
+      audio.pause();
+    }
+    audio = new Audio(
+      "excerpt.wav?begin_millis=" + beginMs + "&end_millis=" + endMs);
+    audio.play();
+  });
+  document.getElementById('text').addEventListener('mouseup', function(e) {
+    if (e.target.selectionStart != undefined) {
+      document.getElementById('begin_char').value = e.target.selectionStart;
+      document.getElementById('end_char').value = e.target.selectionEnd;
+      document.getElementById('selected_text').value =
+        e.target.value.substring(e.target.selectionStart, e.target.selectionEnd);
+    }
+  });

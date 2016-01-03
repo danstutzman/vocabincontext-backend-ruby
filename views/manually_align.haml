@@ -12,6 +12,9 @@
         %div{onclick: "currentLineNum = #{line_num}; highlightCurrentLineNum();"}
           = line.line
       %td{id: "end#{line_num}"}= line.end_millis && line.end_millis / 1000.0
+      %td
+        %audio(controls preload="none")
+          %source(src="/excerpt.wav?begin_millis=#{@song.lines[line_num - 1].end_millis}&end_millis=#{line.end_millis}")
 
 :javascript
   // See https://developers.google.com/youtube/iframe_api_reference

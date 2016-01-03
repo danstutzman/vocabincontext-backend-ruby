@@ -24,3 +24,11 @@ end
 class Alignment < ActiveRecord::Base
   self.primary_key = 'alignment_id'
 end
+
+class Syllable < ActiveRecord::Base
+  self.primary_key = 'syllable_id'
+end
+
+class Clip < ActiveRecord::Base
+  self.primary_key = 'clip_id'
+end

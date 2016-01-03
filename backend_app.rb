@@ -93,4 +93,39 @@ class BackendApp < Sinatra::Base
     end
     haml :manually_align
   end
+
+  get '/excerpt.wav' do
+    begin_millis  = Integer(params[:begin_millis])
+    end_millis    = Integer(params[:end_millis])
+    begin_time    = begin_millis / 1000.0
+    duration_time = (end_millis - begin_millis) / 1000.0
+    filename = "excerpt-#{begin_millis}-#{end_millis}.wav"
+    puts "/usr/local/bin/sox /Users/daniel/dev/detect-beats/y8rBC6GCUjg.wav #{filename} trim #{begin_time} #{duration_time}"
+    `/usr/local/bin/sox /Users/daniel/dev/detect-beats/y8rBC6GCUjg.wav #{filename} trim #{begin_time} #{duration_time}`
+    data = File.read filename
+    File.delete filename
+    content_type 'audio/wav'
+    response.write data
+  end
+
+  get '/align-syllables' do
+    @syllables = Syllable.all.order(:begin_ms).to_a
+    @song = Song.first #find_by_youtube_video_id(params[:video_id])
+    @song.lines = Line.where(song_id: @song.song_id).order(:line_id)
+    @text = @song.lines.map { |line| line.line }.join("\n")
+    @clips = Clip.order('clip_id desc')
+    haml :align_syllables2
+  end
+
+  post '/align-syllables' do
+    clip = Clip.new
+    clip.rough_begin_syllable = params['begin_syllable']
+    clip.rough_end_syllable   = params['end_syllable']
+    clip.begin_ms   = params['begin_ms']
+    clip.end_ms     = params['end_ms']
+    clip.begin_char = params['begin_char']
+    clip.end_char   = params['end_char']
+    clip.save!
+    redirect '/align-syllables'
+  end
 end

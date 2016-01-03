@@ -1,0 +1,75 @@
+%h1 Next syllable
+%form
+  %table
+    - @syllables.each_with_index do |syllable, i|
+      %tr
+        %td
+          %audio(controls preload='none'){id:"syllable#{i}audio"}
+            %source{src: "/excerpt.wav?begin_millis=#{syllable.begin_ms}&end_millis=#{syllable.end_ms}"}
+        %td= syllable.begin_ms / 1000.0
+        %td= syllable.end_ms / 1000.0
+        %td
+          %input{id:"syllable#{i}transcription",
+            name:"syllable#{i}transcription",
+            value: syllable.transcription}
+%script
+  = "num_syllables = #{@syllables.size};"
+  = "syllable_ids = JSON.parse('#{JSON.dump(@syllables.map { |s| s.syllable_id })}');"
+  = "current_syllable = 0;"
+:javascript
+  function focusCurrentSyllable() {
+    var input = document.getElementById("syllable" + current_syllable + "transcription");
+    input.focus();
+  }
+  focusCurrentSyllable();
+
+  function makeFocusHandler(audio, input, i) {
+    return function(e) {
+      audio.play();
+      current_syllable = i;
+      input.select();
+      e.preventDefault();
+    };
+  }
+
+  function saveTranscription(input) {
+    var data = {
+      syllable_id: syllable_ids[current_syllable],
+      new_transcription: input.value
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", window.location, true);
+    var data = 'syllable_id=' + encodeURIComponent(data.syllable_id) +
+      '&new_transcription=' + encodeURIComponent(data.new_transcription);
+    xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    xhr.send(data);
+  }
+
+  function makeKeyUpHandler(audio, input) {
+    return function(e) {
+      if (e.which == 38) { // up arrow
+        if (current_syllable > 0) {
+          saveTranscription(input);
+          current_syllable -= 1;
+          focusCurrentSyllable();
+        }
+      } else if (e.which == 40) { // down arrow
+        if (current_syllable < num_syllables - 1) {
+          saveTranscription(input);
+          current_syllable += 1;
+          focusCurrentSyllable();
+        }
+      } else if (e.which == 13) {
+        e.preventDefault();
+      }
+    };
+  }
+
+  for (var i = 0; i < num_syllables; i++) {
+    var audio = document.getElementById("syllable" + i + "audio");
+    var input = document.getElementById("syllable" + i + "transcription");
+    input.addEventListener('focus', makeFocusHandler(audio, input, i), false);
+    input.addEventListener('keyup', makeKeyUpHandler(audio, input), false);
+  }
+
+
