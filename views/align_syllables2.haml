@@ -34,6 +34,8 @@
       %tr
         %td
           %button{onclick: "new Audio('/excerpt.wav?begin_millis=#{clip.begin_ms}&end_millis=#{clip.end_ms}').play(); return false;"} Play
+        %td
+          %a{href: "/excerpt-#{clip.begin_ms}-#{clip.end_ms}.mp3"} Save
         %td= clip.rough_begin_syllable
         %td= clip.rough_end_syllable
         %td= clip.begin_ms / 1000.0

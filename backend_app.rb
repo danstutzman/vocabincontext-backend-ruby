@@ -108,6 +108,23 @@ class BackendApp < Sinatra::Base
     response.write data
   end
 
+  get '/excerpt-:begin_millis-:end_millis.mp3' do
+    begin_millis  = Integer(params[:begin_millis])
+    end_millis    = Integer(params[:end_millis])
+    begin_time    = begin_millis / 1000.0
+    duration_time = (end_millis - begin_millis) / 1000.0
+    filename = "excerpt-#{begin_millis}-#{end_millis}.wav"
+    puts "/usr/local/bin/sox /Users/daniel/dev/detect-beats/y8rBC6GCUjg.wav #{filename} trim #{begin_time} #{duration_time}"
+    `/usr/local/bin/sox /Users/daniel/dev/detect-beats/y8rBC6GCUjg.wav #{filename} trim #{begin_time} #{duration_time}`
+    filename_mp3 = filename.gsub(/\.wav$/, '.mp3')
+    `/usr/local/bin/lame #{filename} #{filename_mp3}`
+    data = File.read filename_mp3
+    File.delete filename
+    File.delete filename_mp3
+    content_type 'audio/mp3'
+    response.write data
+  end
+
   get '/align-syllables' do
     @syllables = Syllable.all.order(:begin_ms).to_a
     @song = Song.first #find_by_youtube_video_id(params[:video_id])
