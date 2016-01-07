@@ -49,19 +49,18 @@ class BackendApp < Sinatra::Base
     else
       word_id = Word.find_by_word(query).word_id
       line_words = LineWord.joins(:line).where(word_id: word_id)
-      #line_words = line_words.where('lines.audio_excerpt_filename is not null')
     end
-    lines = Line.where('line_id IN (?)', line_words.map { |lw| lw.line_id }.uniq)
-    load_alignment_for_lines lines
+    @lines = Line.where('line_id IN (?)', line_words.map { |lw| lw.line_id }.uniq)
+    load_alignment_for_lines @lines
     line_by_line_id = {}
-    lines.each do |line|
+    @lines.each do |line|
       line_by_line_id[line.line_id] = line
       line.line_words = []
     end
     line_words.each do |line_word|
       line_by_line_id[line_word.line_id].line_words.push line_word
     end
-    lines.each do |line|
+    @lines.each do |line|
       line.line_html = line.line
       line.line_words.each do |line_word|
         line.line_html[line_word.begin_index...line_word.begin_index] += '<b>'
@@ -77,11 +76,13 @@ class BackendApp < Sinatra::Base
       end
     end
 
-    @songs = Song.where('song_id IN (?)', lines.map { |line| line.song_id }.uniq)
-    @songs = @songs.includes(:video)
-    @songs.each do |song|
-      song.lines = lines.select { |line| line.song_id == song.song_id }
-    end
+    songs = Song.where('song_id IN (?)', @lines.map { |line| line.song_id }.uniq)
+    songs = songs.includes(:video)
+    song_by_song_id = {}
+    songs.each { |song| song_by_song_id[song.song_id] = song }
+    @lines.each { |line| line.song = song_by_song_id[line.song_id] }
+
+    @lines = @lines.sort_by { |line| line.alignment ? 1 : 2 }
 
     haml :results
   end
@@ -92,8 +93,15 @@ class BackendApp < Sinatra::Base
       if match = key.match(/^([0-9]+).set_video_id$/)
         found_set_video_id = true
         source_num = match[1]
-        Video.create! youtube_video_id: params["#{source_num}.video_id"],
-          song_source_num: source_num
+        video_id = params["#{source_num}.video_id"].find { |value| value != '' } || ''
+        video = Video.find_by_song_source_num(source_num) ||
+          Video.new({song_source_num: source_num})
+        if video_id != ''
+          video.youtube_video_id = video_id
+          video.save!
+        else
+          video.destroy
+        end
       end
     end
     raise "Couldn't find set_video_id param" if !found_set_video_id

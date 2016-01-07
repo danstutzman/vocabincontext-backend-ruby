@@ -1,16 +1,25 @@
+:css
+  th { align: left }
+
 %form(method='POST' action='/set-video-id')
   %input(type='hidden' name='redirect_url'){value: "#{request.path}?#{request.query_string}"}
-  - @songs.each do |song|
-    %li ##{song.source_num}: #{song.artist_name}: #{song.song_name}
-    %ul
-      %li
-        Video ID
-        %input{name: "#{song.source_num}.video_id", value: song.video && song.video.youtube_video_id}
-        %button{name: "#{song.source_num}.set_video_id"} Set
-        %a{href: "/manually-align/#{song.source_num}"} Align
-
-      - song.lines.each_with_index do |line, line_num|
-        %li
-          != "&ldquo;#{line.line}&rdquo;"
+  %table
+    %tr
+      %th Video ID
+      %th Excerpt
+      %th Artist Name
+      %th Song Name
+      %th Quote
+    - @lines.each do |line|
+      %tr
+        %td(nowrap='nowrap')
+          %input(placeholder='Video ID' size='5'){name: "#{line.song.source_num}.video_id[]", value: line.song.video && line.song.video.youtube_video_id}
+          %button(type='submit' name="#{line.song.source_num}.set_video_id") Set
+        %td
           - if line.alignment
-            %button{onclick: "audio = new Audio('/excerpt.wav?video_id=#{song.video.youtube_video_id}&begin_millis=#{line.alignment.begin_millis}&end_millis=#{line.alignment.end_millis}'); audio.play(); event.preventDefault();"} Play
+            %button{onclick: "audio = new Audio('/excerpt.wav?video_id=#{line.song.video.youtube_video_id}&begin_millis=#{line.alignment.begin_millis}&end_millis=#{line.alignment.end_millis}'); audio.play(); event.preventDefault();"} Play
+          - else
+            %a{href: "/manually-align/#{line.song.source_num}"} Align
+        %td(nowrap='nowrap')= line.song.artist_name[0...20]
+        %td(nowrap='nowrap')= line.song.song_name[0...20]
+        %td!= "&ldquo;#{line.line}&rdquo;"
