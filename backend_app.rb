@@ -1,3 +1,4 @@
+require 'fileutils'
 require 'json'
 require './models'
 require 'sinatra/activerecord'
@@ -90,15 +91,15 @@ class BackendApp < Sinatra::Base
     'OK'
   end
 
-  get '/manually-align/:video_id' do
-    @song = Song.find_by_youtube_video_id(params[:video_id])
+  get '/manually-align/:source_num' do
+    @song = Song.find_by_source_num(params[:source_num])
     @song.lines = Line.where(song_id: @song.song_id).order(:line_id)
     haml :manually_align
   end
 
-  post '/manually-align/:video_id' do
+  post '/manually-align/:source_num' do
+    @song = Song.find_by_source_num(params[:source_num])
     data = JSON.parse(request.env['rack.input'].read)
-    @song = Song.find_by_youtube_video_id(params[:video_id])
     @song.lines = Line.where(song_id: @song.song_id).order(:line_id)
     @song.lines.each_with_index do |line, line_num|
       if data[line_num]
@@ -106,7 +107,7 @@ class BackendApp < Sinatra::Base
         line.save!
       end
     end
-    haml :manually_align
+    'OK'
   end
 
   get '/excerpt.wav' do
@@ -159,5 +160,19 @@ class BackendApp < Sinatra::Base
     clip.end_char   = params['end_char']
     clip.save!
     redirect '/align-syllables'
+  end
+
+  get '/speed-up/:video_id.m4a' do
+    video_id = params['video_id']
+    FileUtils.mkdir_p '/tmp/youtube'
+    path1 = "/tmp/youtube/#{video_id}.wav"
+    if not File.exists? path1
+      `PATH=/usr/local/Cellar/ffmpeg/2.8.3/bin /usr/bin/python /usr/local/bin/youtube-dl http://www.youtube.com/watch?v=#{video_id} --extract-audio --audio-format wav -o "/tmp/youtube/%(id)s.%(ext)s"`
+    end
+    path3 = "/tmp/youtube/#{video_id}.x2.wav"
+    if not File.exists? path3
+      `/usr/local/bin/sox #{path1} #{path3} tempo 2`
+    end
+    send_file path3
   end
 end

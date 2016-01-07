@@ -7,7 +7,7 @@
         Video ID
         %input{name: "#{song.source_num}.video_id", value: song.video && song.video.youtube_video_id}
         %button{name: "#{song.source_num}.set_video_id"} Set
-        %a{href: "/manually-align/#{song.video && song.video.youtube_video_id}"} Align
+        %a{href: "/manually-align/#{song.source_num}"} Align
 
       - song.lines.each do |line|
         %li!= "&ldquo;#{line.line}&rdquo;"
