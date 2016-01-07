@@ -9,8 +9,8 @@
         %button{name: "#{song.source_num}.set_video_id"} Set
         %a{href: "/manually-align/#{song.source_num}"} Align
 
-      - song.lines.each do |line|
-        %li!= "&ldquo;#{line.line}&rdquo;"
-        - if line.audio_excerpt_filename
-          %audio(controls onClick='var a = event.target; if (a.paused) a.play(); else a.pause();')
-            %source{type:'audio/aac', src:"http://vocabincontext-media-excerpts.s3-website-us-east-1.amazonaws.com/#{line.audio_excerpt_filename}"}
+      - song.lines.each_with_index do |line, line_num|
+        %li
+          != "&ldquo;#{line.line}&rdquo;"
+          - if line.alignment
+            %button{onclick: "audio = new Audio('/excerpt.wav?video_id=#{song.video.youtube_video_id}&begin_millis=#{line.alignment.begin_millis}&end_millis=#{line.alignment.end_millis}'); audio.play(); event.preventDefault();"} Play

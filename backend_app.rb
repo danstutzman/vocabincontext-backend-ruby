@@ -1,9 +1,34 @@
 require 'fileutils'
 require 'json'
 require './models'
+require 'open3'
 require 'sinatra/activerecord'
 require 'sinatra/base'
 require 'tilt/haml'
+
+def download_wav video_id
+  FileUtils.mkdir_p '/tmp/youtube'
+  path1 = "/tmp/youtube/#{video_id}.wav"
+  if not File.exists? path1
+    `PATH=/usr/local/Cellar/ffmpeg/2.8.3/bin /usr/bin/python /usr/local/bin/youtube-dl http://www.youtube.com/watch?v=#{video_id} --extract-audio --audio-format wav -o "/tmp/youtube/%(id)s.%(ext)s"`
+  end
+  path1
+end
+
+def load_alignment_for_lines lines
+  source_nums = lines.map { |line| line.song_source_num }.uniq
+  alignments = Alignment.where('song_source_num in (?)', source_nums)
+  alignment_by_source_num_and_line_num = {}
+  alignments.each do |alignment|
+    alignment_by_source_num_and_line_num[
+      [alignment.song_source_num, alignment.num_line_in_song]] = alignment
+  end
+  lines.each do |line|
+    alignment = alignment_by_source_num_and_line_num[
+       [line.song_source_num, line.num_line_in_song]]
+    line.alignment = alignment if alignment
+  end
+end
 
 class BackendApp < Sinatra::Base
   register Sinatra::ActiveRecordExtension
@@ -27,6 +52,7 @@ class BackendApp < Sinatra::Base
       #line_words = line_words.where('lines.audio_excerpt_filename is not null')
     end
     lines = Line.where('line_id IN (?)', line_words.map { |lw| lw.line_id }.uniq)
+    load_alignment_for_lines lines
     line_by_line_id = {}
     lines.each do |line|
       line_by_line_id[line.line_id] = line
@@ -94,6 +120,7 @@ class BackendApp < Sinatra::Base
   get '/manually-align/:source_num' do
     @song = Song.find_by_source_num(params[:source_num])
     @song.lines = Line.where(song_id: @song.song_id).order(:line_id)
+    load_alignment_for_lines @song.lines
     haml :manually_align
   end
 
@@ -101,25 +128,36 @@ class BackendApp < Sinatra::Base
     @song = Song.find_by_source_num(params[:source_num])
     data = JSON.parse(request.env['rack.input'].read)
     @song.lines = Line.where(song_id: @song.song_id).order(:line_id)
+    load_alignment_for_lines @song.lines
     @song.lines.each_with_index do |line, line_num|
-      if data[line_num]
-        line.end_millis   = data[line_num]['end_millis']
-        line.save!
+      new_data = data[line_num]
+      if new_data && new_data['begin_millis'] && new_data['end_millis']
+        alignment = line.alignment || Alignment.new({
+          song_source_num: @song.source_num,
+          num_line_in_song: line_num,
+        })
+        alignment.begin_millis = new_data['begin_millis']
+        alignment.end_millis   = new_data['end_millis']
+        alignment.save!
       end
     end
     'OK'
   end
 
   get '/excerpt.wav' do
+    youtube_video_id = params[:video_id]
     begin_millis  = Integer(params[:begin_millis])
     end_millis    = Integer(params[:end_millis])
     begin_time    = begin_millis / 1000.0
     duration_time = (end_millis - begin_millis) / 1000.0
-    filename = "excerpt-#{begin_millis}-#{end_millis}.wav"
-    puts "/usr/local/bin/sox /Users/daniel/dev/detect-beats/y8rBC6GCUjg.wav #{filename} trim #{begin_time} #{duration_time}"
-    `/usr/local/bin/sox /Users/daniel/dev/detect-beats/y8rBC6GCUjg.wav #{filename} trim #{begin_time} #{duration_time}`
-    data = File.read filename
-    File.delete filename
+    full_path = download_wav youtube_video_id
+    excerpt_path = "/tmp/youtube/excerpt-#{begin_millis}-#{end_millis}.wav"
+    command = ["/usr/local/bin/sox", full_path, excerpt_path,
+      'trim', begin_time.to_s, duration_time.to_s]
+    stdout, stderr, status = Open3.capture3(*command)
+    raise "Command #{command} had stderr #{stderr}" if !File.exists? excerpt_path
+    data = File.read excerpt_path
+    File.delete excerpt_path
     content_type 'audio/wav'
     response.write data
   end
@@ -164,11 +202,7 @@ class BackendApp < Sinatra::Base
 
   get '/speed-up/:video_id.m4a' do
     video_id = params['video_id']
-    FileUtils.mkdir_p '/tmp/youtube'
-    path1 = "/tmp/youtube/#{video_id}.wav"
-    if not File.exists? path1
-      `PATH=/usr/local/Cellar/ffmpeg/2.8.3/bin /usr/bin/python /usr/local/bin/youtube-dl http://www.youtube.com/watch?v=#{video_id} --extract-audio --audio-format wav -o "/tmp/youtube/%(id)s.%(ext)s"`
-    end
+    path1 = download_wav video_id
     path3 = "/tmp/youtube/#{video_id}.x2.wav"
     if not File.exists? path3
       `/usr/local/bin/sox #{path1} #{path3} tempo 2`

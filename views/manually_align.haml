@@ -7,26 +7,31 @@
 %table
   - @song.lines.each_with_index do |line, line_num|
     %tr
-      %td{id: "begin#{line_num}"}
+      %td
+        %button{onclick: "play_excerpt(#{line_num})"} Play
+      %td{id: "current#{line_num}"}
+      %td{id: "begin#{line_num}"}= line.alignment && line.alignment.begin_millis / 1000.0
       %td
         %div{onclick: "currentLineNum = #{line_num}; highlightCurrentLineNum();"}
           = line.line
-      %td{id: "end#{line_num}"}= line.end_millis && line.end_millis / 1000.0
+      %td{id: "end#{line_num}"}= line.alignment && line.alignment.end_millis / 1000.0
       -#%td
       -#  %audio(controls preload="none")
       -#    %source(src="/excerpt.wav?begin_millis=#{@song.lines[line_num - 1].end_millis}&end_millis=#{line.end_millis}")
 
 :javascript
   var num_lines = #{@song.lines.size};
-  var alignments = JSON.parse('#{@song.lines.to_json}');
+  var lines = JSON.parse('#{@song.lines.to_json}');
+  var alignments = JSON.parse('#{@song.lines.map { |line| line.alignment || {} }.to_json}');
+  var videoId = JSON.parse('#{@song.video.youtube_video_id.to_json}');
 
 :javascript
   var currentLineNum = 0;
   function highlightCurrentLineNum() {
     for (var i = 0; i < num_lines; i++) {
-      document.getElementById('begin' + i).innerHTML = "";
+      document.getElementById('current' + i).innerHTML = "";
     }
-    document.getElementById('begin' + currentLineNum).innerHTML = "&gt;";
+    document.getElementById('current' + currentLineNum).innerHTML = "&gt;";
   }
   highlightCurrentLineNum();
 
@@ -34,32 +39,72 @@
   function keypress(e) {
     if (e.charCode === 32) { // if space bar
       var time = player.currentTime * 2;
-      var tdTag = document.getElementById('end' + currentLineNum);
-      tdTag.innerHTML = time;
       if (!alignments[currentLineNum]) {
         alignments[currentLineNum] = {};
       }
+
+      var tdTag = document.getElementById('end' + currentLineNum);
+      tdTag.innerHTML = time;
       alignments[currentLineNum].end_millis = Math.round(time * 1000);
-      currentLineNum += 1;
-      highlightCurrentLineNum();
-      e.preventDefault();
-    } else if (e.charCode == 106) { // if 'j' key
+
+      if (alignments[currentLineNum].begin_millis === undefined) {
+        if (currentLineNum > 0 && lines[currentLineNum - 1].line !== '') {
+          alignments[currentLineNum].begin_millis =
+            alignments[currentLineNum - 1].end_millis;
+        } else if (currentLineNum > 1) {
+          alignments[currentLineNum].begin_millis =
+            alignments[currentLineNum - 2].end_millis;
+        }
+        var tdTag = document.getElementById('begin' + currentLineNum);
+        tdTag.innerHTML = alignments[currentLineNum].begin_millis / 1000;
+      }
+
       if (currentLineNum < num_lines - 1) {
         currentLineNum += 1;
       }
-      if (alignments[currentLineNum - 1].end_millis) {
-        player.currentTime = alignments[currentLineNum - 1].end_millis / 2 / 1000;
+      if (lines[currentLineNum].line === '') { // go down again?
+        if (currentLineNum < num_lines - 1) {
+          currentLineNum += 1;
+        }
       }
       highlightCurrentLineNum();
       e.preventDefault();
-    } else if (e.charCode == 107) { // if 'k' key
+    } else if (e.charCode == 106) { // if 'j' key = go down
+      if (currentLineNum < num_lines - 1) {
+        currentLineNum += 1;
+      }
+      if (lines[currentLineNum].line === '') { // go down again?
+        if (currentLineNum < num_lines - 1) {
+          currentLineNum += 1;
+        }
+      }
+      if (alignments[currentLineNum].begin_millis) {
+        player.currentTime = alignments[currentLineNum].begin_millis / 2 / 1000;
+      }
+      highlightCurrentLineNum();
+      e.preventDefault();
+    } else if (e.charCode == 107) { // if 'k' key = go up
       if (currentLineNum > 0) {
         currentLineNum -= 1;
       }
-      if (alignments[currentLineNum - 1].end_millis) {
-        player.currentTime = alignments[currentLineNum - 1].end_millis / 2 / 1000;
+      if (lines[currentLineNum].line === '') { // go up again?
+        if (currentLineNum > 0) {
+          currentLineNum -= 1;
+        }
+      }
+      if (alignments[currentLineNum].begin_millis) {
+        player.currentTime = alignments[currentLineNum].begin_millis / 2 / 1000;
       }
       highlightCurrentLineNum();
+      e.preventDefault();
+    } else if (e.charCode == 115) { // if 's' key = start delayed
+      var time = player.currentTime * 2;
+      if (!alignments[currentLineNum]) {
+        alignments[currentLineNum] = {};
+      }
+      alignments[currentLineNum].begin_millis = Math.round(time * 1000);
+      var tdTag = document.getElementById('begin' + currentLineNum);
+      tdTag.innerHTML = time;
       e.preventDefault();
     }
   }
@@ -74,3 +119,16 @@
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.send(JSON.stringify(alignments));
   }
+
+  var playingAudio = null;
+  function play_excerpt(lineNum) {
+    if (playingAudio) {
+      playingAudio.pause();
+    }
+    var path = "/excerpt.wav?video_id=" + videoId +
+      "&begin_millis=" + alignments[lineNum].begin_millis +
+      "&end_millis=" + alignments[lineNum].end_millis;
+    playingAudio = new Audio(path);
+    playingAudio.play();
+  }
+}
