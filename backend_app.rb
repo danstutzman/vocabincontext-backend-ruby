@@ -10,7 +10,17 @@ def download_wav video_id
   FileUtils.mkdir_p '/tmp/youtube'
   path1 = "/tmp/youtube/#{video_id}.wav"
   if not File.exists? path1
-    `PATH=/usr/local/Cellar/ffmpeg/2.8.3/bin /usr/bin/python /usr/local/bin/youtube-dl http://www.youtube.com/watch?v=#{video_id} --extract-audio --audio-format wav -o "/tmp/youtube/%(id)s.%(ext)s"`
+    command = [
+      {'PATH' => '/usr/local/Cellar/ffmpeg/2.8.3/bin'},
+      '/usr/bin/python', '/usr/local/bin/youtube-dl',
+      "http://www.youtube.com/watch?v=#{video_id}",
+      '--extract-audio', '--audio-format', 'wav',
+      '-o', "/tmp/youtube/%(id)s.%(ext)s",
+    ]
+    stdout, stderr, status = Open3.capture3(*command)
+    if not File.exists? path1
+      raise "Command #{command.join(' ')} raised stderr #{stderr}"
+    end
   end
   path1
 end
