@@ -92,7 +92,22 @@ class BackendApp < Sinatra::Base
     songs.each { |song| song_by_song_id[song.song_id] = song }
     @lines.each { |line| line.song = song_by_song_id[line.song_id] }
 
-    @lines = @lines.sort_by { |line| line.alignment ? 1 : 2 }
+    text_to_line = {}
+    @lines.each do |line|
+      text_to_line[line.line] = line if !text_to_line[line.line]
+      if text_to_line[line.line].num_repetitions.nil?
+        text_to_line[line.line].num_repetitions = 0
+      end
+      text_to_line[line.line].num_repetitions += 1
+    end
+    @lines = text_to_line.values
+
+    @lines = @lines.sort_by do |line|
+      [
+        line.alignment ? 1 : 2,
+        -line.num_repetitions
+      ]
+    end
 
     haml :results
   end

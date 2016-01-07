@@ -9,6 +9,7 @@
       %th Excerpt
       %th Artist Name
       %th Song Name
+      %th Repetitions
       %th Quote
     - @lines.each do |line|
       %tr
@@ -22,4 +23,5 @@
             %a{href: "/manually-align/#{line.song.source_num}"} Align
         %td(nowrap='nowrap')= line.song.artist_name[0...20]
         %td(nowrap='nowrap')= line.song.song_name[0...20]
+        %td= line.num_repetitions
         %td!= "&ldquo;#{line.line}&rdquo;"
