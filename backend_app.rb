@@ -183,12 +183,12 @@ class BackendApp < Sinatra::Base
     end_millis    = Integer(params[:end_millis])
     begin_time    = begin_millis / 1000.0
     begin_fade    = [begin_time - 0.5, 0].max
-    duration_time = (end_millis / 1000.0) - begin_fade
+    duration_time = (end_millis / 1000.0) - begin_fade + 0.5
     full_path = download_wav youtube_video_id
     excerpt_path = "/tmp/youtube/excerpt-#{begin_millis}-#{end_millis}.wav"
     command = ["/usr/local/bin/sox", full_path, excerpt_path,
       'trim', begin_fade.to_s, duration_time.to_s,
-      'fade', 't', (begin_time - begin_fade).to_s,
+      'fade', 't', (begin_time - begin_fade).to_s, '0', '0.5',
     ]
     puts command.join(' ')
     stdout, stderr, status = Open3.capture3(*command)
