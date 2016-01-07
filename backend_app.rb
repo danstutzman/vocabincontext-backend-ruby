@@ -22,8 +22,8 @@ class BackendApp < Sinatra::Base
         ).where('lines.audio_excerpt_filename is not null')
     else
       word_id = Word.find_by_word(query).word_id
-      line_words = LineWord.joins(:line
-        ).where('lines.audio_excerpt_filename is not null').where(word_id: word_id)
+      line_words = LineWord.joins(:line).where(word_id: word_id)
+      #line_words = line_words.where('lines.audio_excerpt_filename is not null')
     end
     lines = Line.where('line_id IN (?)', line_words.map { |lw| lw.line_id }.uniq)
     line_by_line_id = {}
