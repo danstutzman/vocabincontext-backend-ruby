@@ -103,7 +103,7 @@ class BackendApp < Sinatra::Base
     @song.lines = Line.where(song_id: @song.song_id).order(:line_id)
     @song.lines.each_with_index do |line, line_num|
       if data[line_num]
-        line.end_millis   = data[line_num]['endMillis']
+        line.end_millis   = data[line_num]['end_millis']
         line.save!
       end
     end

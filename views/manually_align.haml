@@ -17,14 +17,19 @@
       -#    %source(src="/excerpt.wav?begin_millis=#{@song.lines[line_num - 1].end_millis}&end_millis=#{line.end_millis}")
 
 :javascript
+  var num_lines = #{@song.lines.size};
+  var alignments = JSON.parse('#{@song.lines.to_json}');
+
+:javascript
   var currentLineNum = 0;
   function highlightCurrentLineNum() {
-    var tdTag = document.getElementById('begin' + currentLineNum);
-    tdTag.innerHTML = "&gt;";
+    for (var i = 0; i < num_lines; i++) {
+      document.getElementById('begin' + i).innerHTML = "";
+    }
+    document.getElementById('begin' + currentLineNum).innerHTML = "&gt;";
   }
   highlightCurrentLineNum();
 
-  var alignments = [];
   var player = document.getElementById('player');
   function keypress(e) {
     if (e.charCode === 32) { // if space bar
@@ -34,8 +39,26 @@
       if (!alignments[currentLineNum]) {
         alignments[currentLineNum] = {};
       }
-      alignments[currentLineNum].endMillis = Math.round(time * 1000);
+      alignments[currentLineNum].end_millis = Math.round(time * 1000);
       currentLineNum += 1;
+      highlightCurrentLineNum();
+      e.preventDefault();
+    } else if (e.charCode == 106) { // if 'j' key
+      if (currentLineNum < num_lines - 1) {
+        currentLineNum += 1;
+      }
+      if (alignments[currentLineNum - 1].end_millis) {
+        player.currentTime = alignments[currentLineNum - 1].end_millis / 2 / 1000;
+      }
+      highlightCurrentLineNum();
+      e.preventDefault();
+    } else if (e.charCode == 107) { // if 'k' key
+      if (currentLineNum > 0) {
+        currentLineNum -= 1;
+      }
+      if (alignments[currentLineNum - 1].end_millis) {
+        player.currentTime = alignments[currentLineNum - 1].end_millis / 2 / 1000;
+      }
       highlightCurrentLineNum();
       e.preventDefault();
     }
