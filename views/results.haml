@@ -1,8 +1,16 @@
-- @songs.each do |song|
-  %li= song.song_name
-  %ul
-    - song.lines.each do |line|
-      %li!= "&ldquo;#{line.line}&rdquo;"
-      - if line.audio_excerpt_filename
-        %audio(controls onClick='var a = event.target; if (a.paused) a.play(); else a.pause();')
-          %source{type:'audio/aac', src:"http://vocabincontext-media-excerpts.s3-website-us-east-1.amazonaws.com/#{line.audio_excerpt_filename}"}
+%form(method='POST' action='/set-video-id')
+  %input(type='hidden' name='redirect_url'){value: "#{request.path}?#{request.query_string}"}
+  - @songs.each do |song|
+    %li ##{song.source_num}: #{song.artist_name}: #{song.song_name}
+    %ul
+      %li
+        Video ID
+        %input{name: "#{song.source_num}.video_id", value: song.video && song.video.youtube_video_id}
+        %button{name: "#{song.source_num}.set_video_id"} Set
+        %a{href: "/manually-align/#{song.video && song.video.youtube_video_id}"} Align
+
+      - song.lines.each do |line|
+        %li!= "&ldquo;#{line.line}&rdquo;"
+        - if line.audio_excerpt_filename
+          %audio(controls onClick='var a = event.target; if (a.paused) a.play(); else a.pause();')
+            %source{type:'audio/aac', src:"http://vocabincontext-media-excerpts.s3-website-us-east-1.amazonaws.com/#{line.audio_excerpt_filename}"}

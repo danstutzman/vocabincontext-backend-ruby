@@ -18,6 +18,7 @@ end
 class Song < ActiveRecord::Base
   self.primary_key = 'song_id'
 
+  has_one :video, foreign_key: 'song_source_num', primary_key: 'source_num'
   attr :lines, true
 end
 
@@ -31,4 +32,8 @@ end
 
 class Clip < ActiveRecord::Base
   self.primary_key = 'clip_id'
+end
+
+class Video < ActiveRecord::Base
+  self.primary_key = 'youtube_video_id'
 end
