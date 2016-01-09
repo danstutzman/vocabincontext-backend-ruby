@@ -252,4 +252,9 @@ class BackendApp < Sinatra::Base
     end
     send_file path3
   end
+
+  get '/album-cover-path/:sha1' do
+    content_type 'image/jpeg'
+    File.read("/Users/daniel/dev/search-music-apis/spotify_album_covers/#{params['sha1']}")
+  end
 end

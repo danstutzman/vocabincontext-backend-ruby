@@ -23,6 +23,7 @@ class Song < ActiveRecord::Base
   self.primary_key = 'song_id'
 
   has_one :video, foreign_key: 'song_source_num', primary_key: 'source_num'
+  has_one :api_query, foreign_key: 'song_source_num', primary_key: 'source_num'
   attr :lines, true
 end
 
@@ -40,4 +41,8 @@ end
 
 class Video < ActiveRecord::Base
   self.primary_key = 'youtube_video_id'
+end
+
+class ApiQuery < ActiveRecord::Base
+  self.primary_key = 'api_query_id'
 end
