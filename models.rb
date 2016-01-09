@@ -17,6 +17,8 @@ end
 
 class LineWord < ActiveRecord::Base
   belongs_to :line
+  attr :rating, true
+  attr :word, true
 end
 
 class Song < ActiveRecord::Base

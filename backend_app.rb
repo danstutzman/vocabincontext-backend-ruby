@@ -79,13 +79,29 @@ class BackendApp < Sinatra::Base
     songs.each { |song| song_by_song_id[song.song_id] = song }
     @lines.each { |line| line.song = song_by_song_id[line.song_id] }
 
+    word_ids = []
+    @lines.each { |line| word_ids += line.line_words.map { |lw| lw.word_id } }
+    words = Word.where('word_id in (?)', word_ids)
+    word_by_word_id = {}
+    words.each { |word| word_by_word_id[word.word_id] = word }
+
+    word2rating =
+      JSON.parse(File.read('/Users/daniel/dev/sort-spanish/rate_words.json'))
+    @lines.each do |line|
+      line.line_words.each do |line_word|
+        line_word.word = word_by_word_id[line_word.word_id]
+        line_word.rating = word2rating[line_word.word.word] || 3
+      end
+    end
+
     text_to_line = {}
     @lines.each do |line|
-      text_to_line[line.line] = line if !text_to_line[line.line]
-      if text_to_line[line.line].num_repetitions_of_line.nil?
-        text_to_line[line.line].num_repetitions_of_line = 0
+      downcase = line.line_words.map { |lw| lw.word.word }.join(' ')
+      text_to_line[downcase] = line if !text_to_line[downcase]
+      if text_to_line[downcase].num_repetitions_of_line.nil?
+        text_to_line[downcase].num_repetitions_of_line = 0
       end
-      text_to_line[line.line].num_repetitions_of_line += 1
+      text_to_line[downcase].num_repetitions_of_line += 1
     end
     @lines = text_to_line.values
 
