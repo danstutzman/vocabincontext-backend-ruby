@@ -3,12 +3,12 @@ require 'active_record'
 class Line < ActiveRecord::Base
   self.primary_key = 'line_id'
 
-  attr :line_words, true
   attr :line_html, true
   attr :alignment, true
   attr :song, true
   attr :num_repetitions_of_line, true
   attr :num_repetitions_of_search_word, true
+  has_many :line_words, lambda { order 'num_word_in_song' }
 end
 
 class Word < ActiveRecord::Base

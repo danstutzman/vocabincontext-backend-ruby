@@ -1,34 +1,73 @@
 :css
   th { align: left }
+  .utterance {
+    margin-bottom: 10px;
+  }
+  .utterance .word {
+    padding-right: 0px;
+    display: inline-block;
+    text-align: left;
+  }
+  .utterance .word .spanish {
+    font-style: italic;
+    margin-right: 0px;
+  }
+  .utterance .word .gloss {
+    color: #999;
+    line-height: 50%;
+    margin-right: 0px;
+  }
 
 %form(method='POST' action='/set-video-id')
   %input(type='hidden' name='redirect_url'){value: "#{request.path}?#{request.query_string}"}
   %table
     %tr
-      %th Img
       %th Video ID
-      %th Excerpt
-      %th Artist Name
-      %th Song Name
+      %th Image
+      %th
+        Artist Name
+        %br
+        Song Name
       %th Repetitions
       %th Quote
     - @lines.each do |line|
       %tr
-        %td
-          - if line.song.api_query
-            - if line.song.api_query.album_cover_path
-              %img{height: 20, src: "/album-cover-path/#{line.song.api_query.album_cover_path.split('/').last}"}
-            - else
-              x
         %td(nowrap='nowrap')
           %input(placeholder='Video ID' size='5'){name: "#{line.song.source_num}.video_id[]", value: line.song.video && line.song.video.youtube_video_id}
           %button(type='submit' name="#{line.song.source_num}.set_video_id") Set
-        %td
+          %br
           - if line.alignment
             %button{onclick: "audio = new Audio('/excerpt.wav?video_id=#{line.song.video.youtube_video_id}&begin_millis=#{line.alignment.begin_millis}&end_millis=#{line.alignment.end_millis}'); audio.play(); event.preventDefault();"} Play
           - else
             %a{href: "/manually-align/#{line.song.source_num}"} Align
-        %td(nowrap='nowrap')= line.song.artist_name[0...20]
-        %td(nowrap='nowrap')= line.song.song_name[0...20]
+        %td
+          - if line.song.api_query
+            - if line.song.api_query.album_cover_path
+              %img{height: 40, src: "/album-cover-path/#{line.song.api_query.album_cover_path.split('/').last}"}
+            - else
+              x
+        %td(nowrap='nowrap')
+          = line.song.artist_name[0...20]
+          %br
+          %i= line.song.song_name[0...20]
         %td= line.num_repetitions_of_line
-        %td!= "&ldquo;#{line.line}&rdquo;"
+        %td
+          .utterance
+            - line.line_words.each_with_index do |line_word, w|
+              - before_word = line.line[line_word.begin_char_punctuation...line_word.begin_char_highlight]
+              - actual_word = line.line[line_word.begin_char_highlight...line_word.end_char_highlight]
+              - after_word = line.line[line_word.end_char_highlight...line_word.end_char_punctuation]
+              .word
+                .spanish
+                  - if line_word.word_id == @word_id
+                    != "#{before_word}<b>#{actual_word}</b>#{after_word}"
+                  - else
+                    = "#{before_word}#{actual_word}#{after_word}"
+                .gloss
+                  != "#{before_word}&nbsp;#{after_word}"
+              - if w < line.line_words.size - 1
+                - between_words = line.line[line_word.end_char_punctuation...line.line_words[w + 1].begin_char_punctuation]
+                - if between_words.strip != ''
+                  .word
+                    .spanish= between_words
+                    .gloss= between_words
