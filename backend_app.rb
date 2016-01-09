@@ -92,7 +92,7 @@ class BackendApp < Sinatra::Base
     end
 
     songs = Song.where('song_id IN (?)', @lines.map { |line| line.song_id }.uniq)
-    songs = songs.includes(:video)
+    songs = songs.includes(:video).includes(:api_query)
     song_by_song_id = {}
     songs.each { |song| song_by_song_id[song.song_id] = song }
     @lines.each { |line| line.song = song_by_song_id[line.song_id] }
