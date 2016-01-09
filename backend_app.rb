@@ -92,8 +92,8 @@ class BackendApp < Sinatra::Base
     @lines = @lines.sort_by do |line|
       [
         line.alignment ? 1 : 2,
-        -line.num_repetitions_of_search_word,
-        -line.num_repetitions_of_line
+        -line.num_repetitions_of_line,
+        -line.num_repetitions_of_search_word / line.line_words.size.to_f,
       ]
     end
 
