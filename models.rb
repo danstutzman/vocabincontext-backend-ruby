@@ -7,7 +7,8 @@ class Line < ActiveRecord::Base
   attr :line_html, true
   attr :alignment, true
   attr :song, true
-  attr :num_repetitions, true
+  attr :num_repetitions_of_line, true
+  attr :num_repetitions_of_search_word, true
 end
 
 class Word < ActiveRecord::Base

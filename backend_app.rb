@@ -86,6 +86,11 @@ class BackendApp < Sinatra::Base
       end
     end
 
+    line_words.each do |line_word|
+      line_by_line_id[line_word.line_id].num_repetitions_of_search_word ||= 0
+      line_by_line_id[line_word.line_id].num_repetitions_of_search_word += 1
+    end
+
     songs = Song.where('song_id IN (?)', @lines.map { |line| line.song_id }.uniq)
     songs = songs.includes(:video)
     song_by_song_id = {}
@@ -95,17 +100,18 @@ class BackendApp < Sinatra::Base
     text_to_line = {}
     @lines.each do |line|
       text_to_line[line.line] = line if !text_to_line[line.line]
-      if text_to_line[line.line].num_repetitions.nil?
-        text_to_line[line.line].num_repetitions = 0
+      if text_to_line[line.line].num_repetitions_of_line.nil?
+        text_to_line[line.line].num_repetitions_of_line = 0
       end
-      text_to_line[line.line].num_repetitions += 1
+      text_to_line[line.line].num_repetitions_of_line += 1
     end
     @lines = text_to_line.values
 
     @lines = @lines.sort_by do |line|
       [
         line.alignment ? 1 : 2,
-        -line.num_repetitions
+        -line.num_repetitions_of_search_word,
+        -line.num_repetitions_of_line
       ]
     end
 
