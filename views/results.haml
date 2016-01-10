@@ -74,7 +74,10 @@
                   - else
                     != "#{before_word}#{actual_word}#{after_word}"
                 .gloss
-                  != "#{before_word}&nbsp;#{after_word}"
+                  - if line_word.translation
+                    != "#{before_word}#{line_word.translation.english_word}#{after_word}"
+                  - else
+                    &nbsp;
               - if w < line.line_words.size - 1
                 - between_words = line.line[line_word.end_char_punctuation...line.line_words[w + 1].begin_char_punctuation]
                 - if between_words.strip != ''

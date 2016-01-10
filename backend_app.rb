@@ -73,6 +73,25 @@ class BackendApp < Sinatra::Base
       line_by_line_id[line_word.line_id].num_repetitions_of_search_word += 1
     end
 
+    translation_inputs = []
+    @lines.each do |line|
+      translation_inputs += line.line_words.map { |line_word|
+        line_word.part_of_speech + '-' + line_word.word_lowercase
+      }
+    end
+    translations = Translation.where('part_of_speech_and_spanish_word in (?)',
+      translation_inputs.uniq)
+    translations_by_input = {}
+    translations.each do |translation|
+      translations_by_input[translation.part_of_speech_and_spanish_word] = translation
+    end
+    @lines.each do |line|
+      line.line_words.each do |line_word|
+        line_word.translation = translations_by_input[
+          line_word.part_of_speech + '-' + line_word.word_lowercase]
+      end
+    end
+
     songs = Song.where('song_id IN (?)', @lines.map { |line| line.song_id }.uniq)
     songs = songs.includes(:video).includes(:api_query)
     song_by_song_id = {}

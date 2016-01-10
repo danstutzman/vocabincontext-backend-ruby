@@ -19,6 +19,7 @@ class LineWord < ActiveRecord::Base
   belongs_to :line
   attr :rating, true
   attr :word, true
+  attr :translation, true
 end
 
 class Song < ActiveRecord::Base
@@ -48,3 +49,7 @@ end
 class ApiQuery < ActiveRecord::Base
   self.primary_key = 'api_query_id'
 end
+
+class Translation < ActiveRecord::Base
+end
+
