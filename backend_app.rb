@@ -104,12 +104,15 @@ class BackendApp < Sinatra::Base
     word_by_word_id = {}
     words.each { |word| word_by_word_id[word.word_id] = word }
 
-    word2rating =
-      JSON.parse(File.read('/Users/daniel/dev/sort-spanish/rate_words.json'))
+    word_ratings = WordRating.where('word in (?)', words.map { |word| word.word }.uniq)
+    word_rating_by_word = {}
+    word_ratings.each do |word_rating|
+      word_rating_by_word[word_rating.word] = word_rating.rating
+    end
     @lines.each do |line|
       line.line_words.each do |line_word|
         line_word.word = word_by_word_id[line_word.word_id]
-        line_word.rating = word2rating[line_word.word.word] || 3
+        line_word.rating = word_rating_by_word[line_word.word.word] || 3
       end
     end
 

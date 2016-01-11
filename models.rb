@@ -53,3 +53,5 @@ end
 class Translation < ActiveRecord::Base
 end
 
+class WordRating < ActiveRecord::Base
+end
