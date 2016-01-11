@@ -51,10 +51,7 @@
             %a{href: "/manually-align/#{line.song.source_num}"} Align
         %td
           - if line.song.api_query
-            - if line.song.api_query.album_cover_path
-              %img{height: 40, src: "/album-cover-path/#{line.song.api_query.album_cover_path.split('/').last}"}
-            - else
-              x
+            %img{height: 40, src: line.song.api_query.cover_image_url}
         %td(nowrap='nowrap')
           = line.song.artist_name[0...20]
           %br
