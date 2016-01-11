@@ -9,3 +9,8 @@ for TABLE_NAME in `sudo -u postgres psql -t -c "SELECT table_name FROM informati
 EOF
 
 /Applications/Postgres.app/Contents/MacOS/bin/pg_dump -U postgres -Fc -v | ssh root@$INSTANCE_IP -C "cd /tmp && sudo -u postgres pg_restore -U postgres -e -Fc -d postgres"
+
+ssh root@$INSTANCE_IP <<"EOF"
+cd /tmp # eliminate warning
+for TABLE_NAME in `sudo -u postgres psql -t -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"`; do sudo -u postgres psql -c "ANALYZE $TABLE_NAME"; done
+EOF
