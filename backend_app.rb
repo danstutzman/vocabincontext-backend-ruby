@@ -48,27 +48,25 @@ class BackendApp < Sinatra::Base
   end
 
   get '/' do
-    haml :enter_query
-  end
-
-  get '/results' do
-    query = params['q']
+    query = params['q'] || ''
     if query == ''
       @word_id = nil
-      line_words = LineWord.joins(:line
-        ).where('lines.audio_excerpt_filename is not null')
+      @lines = Line.where(
+        'song_source_num in (select song_source_num from alignments)')
+      matching_line_words = []
     else
       @word_id = Word.find_by_word(query).word_id
-      line_words = LineWord.joins(:line).where(word_id: @word_id)
+      matching_line_words = LineWord.joins(:line).where(word_id: @word_id)
+      @lines = Line.where('line_id IN (?)',
+        matching_line_words.map { |lw| lw.line_id }.uniq)
     end
-    @lines = Line.where('line_id IN (?)', line_words.map { |lw| lw.line_id }.uniq)
     @lines = @lines.includes(:line_words)
     load_alignment_for_lines @lines
     line_by_line_id = {}
     @lines.each do |line|
       line_by_line_id[line.line_id] = line
     end
-    line_words.each do |line_word|
+    matching_line_words.each do |line_word|
       line_by_line_id[line_word.line_id].num_repetitions_of_search_word ||= 0
       line_by_line_id[line_word.line_id].num_repetitions_of_search_word += 1
     end
@@ -131,7 +129,7 @@ class BackendApp < Sinatra::Base
       [
         line.alignment ? 1 : 2,
         -line.num_repetitions_of_line,
-        -line.num_repetitions_of_search_word / line.line_words.size.to_f,
+        -(line.num_repetitions_of_search_word || 0) / line.line_words.size.to_f,
       ]
     end
 

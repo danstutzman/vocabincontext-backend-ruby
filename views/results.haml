@@ -1,4 +1,9 @@
 :css
+  body { margin: 0; font-family: sans-serif; }
+
+  input#query { font-size: 20pt; width: 265px; height: 50px; border: 1px #777 solid; }
+  button.search { width: 50px; height: 50px; background: #777 url('magnifying_glass.png') no-repeat 8px 8px; background-size: 30px 30px; vertical-align: bottom; }
+
   th { align: left }
   .utterance {
     margin-bottom: 10px;
@@ -30,7 +35,6 @@
     color: red;
   }
 
-  body { margin: 0; font-family: sans-serif; }
   .excerpt { width: 320px; min-height: 64px; border-bottom: 1px #777 solid; cursor: pointer; position: relative; clear: both; }
   .excerpt .cover { width: 64px; height: 64px; margin-left: 0px; float: right; }
   .excerpt.nonexpanded .cover { -webkit-filter: grayscale(100%); filter: grayscale(100%); }
@@ -40,8 +44,9 @@
   .excerpt .song-name { font-style: italic; font-size: 16pt; margin-left: 5px; }
   .excerpt .artist-name { font-size: 16pt; margin-left: 5px; }
 
-%form(method='POST' action='/set-video-id')
-  %input(type='hidden' name='redirect_url'){value: "#{request.path}?#{request.query_string}"}
+%form(method='GET' action='/')
+  %input#query(name='q' placeholder='Filter by word')
+  %button.search
 
   - @lines.each_with_index do |line, line_num|
     .excerpt.nonexpanded{id: "excerpt-nonexpanded-#{line_num}", onclick: "expandExcerpt(#{line_num})"}
@@ -108,3 +113,5 @@
     document.getElementById('excerpt-expanded-' + lineNum).style.display = 'block';
     currentlyExpandedLineNum = lineNum;
   }
+:javascript
+  document.getElementById('query').focus();
