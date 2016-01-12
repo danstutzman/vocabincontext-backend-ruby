@@ -266,7 +266,7 @@ class BackendApp < Sinatra::Base
     response.write data
   end
 
-  get '/excerpt.m4a' do
+  get '/excerpt.aac' do
     youtube_video_id = params[:video_id]
     begin_millis  = Integer(params[:begin_millis])
     end_millis    = Integer(params[:end_millis])
@@ -274,7 +274,7 @@ class BackendApp < Sinatra::Base
     duration_time = (end_millis / 1000.0) - begin_time
     _22050_mono_m4a_path = download_22050_mono_m4a youtube_video_id
 
-    excerpt_path = "/tmp/youtube_22050_mono/excerpt-#{begin_millis}-#{end_millis}.mp4"
+    excerpt_path = "/tmp/youtube_22050_mono/excerpt-#{begin_millis}-#{end_millis}.aac"
     FileUtils.mkdir_p '/tmp/youtube_22050_mono'
     command = [
       AVCONV, '-i', _22050_mono_m4a_path, '-acodec', 'copy',
@@ -285,7 +285,7 @@ class BackendApp < Sinatra::Base
     stdout, stderr, status = Open3.capture3(*command)
 
     data = File.read excerpt_path
-    content_type 'audio/mp4'
+    content_type 'audio/aac'
     response.write data
   end
 
