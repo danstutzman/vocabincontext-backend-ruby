@@ -285,6 +285,7 @@ class BackendApp < Sinatra::Base
     stdout, stderr, status = Open3.capture3(*command)
 
     data = File.read excerpt_path
+    File.delete excerpt_path
     content_type 'audio/aac'
     response.write data
   end
