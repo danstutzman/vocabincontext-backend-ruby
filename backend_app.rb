@@ -6,6 +6,14 @@ require 'sinatra/activerecord'
 require 'sinatra/base'
 require 'tilt/haml'
 
+YOUTUBE_DL_ENV_PATH = File.exists?('/usr/local/bin/ffmpeg') ?
+  '/usr/local/Cellar/ffmpeg/2.8.3/bin' : '/usr/local/bin:/usr/bin'
+YOUTUBE_DL = File.exists?('/usr/local/bin/youtube-dl') ?
+  '/usr/local/bin/youtube-dl' : '/usr/bin/youtube-dl'
+AVCONV = File.exists?('/usr/local/bin/ffmpeg') ? '/usr/local/bin/ffmpeg' :
+  '/usr/local/bin/avconv'
+AAC_CODEC = File.exists?('/usr/local/bin/avconv') ? 'libfdk_aac' : 'libvo_aacenc'
+
 def download_wav video_id
   FileUtils.mkdir_p '/tmp/youtube'
   path1 = "/tmp/youtube/#{video_id}.wav"
@@ -17,12 +25,47 @@ def download_wav video_id
       '--extract-audio', '--audio-format', 'wav',
       '-o', "/tmp/youtube/%(id)s.%(ext)s",
     ]
+    puts command.join(' ')
     stdout, stderr, status = Open3.capture3(*command)
     if not File.exists? path1
       raise "Command #{command.join(' ')} raised stderr #{stderr}"
     end
   end
   path1
+end
+
+def download_22050_mono_m4a video_id
+  path2 = "/tmp/youtube_22050_mono/#{video_id}.m4a"
+  if not File.exists? path2
+    path1 = "/tmp/youtube_44100_stereo/#{video_id}.m4a"
+    FileUtils.mkdir_p '/tmp/youtube_44100_stereo'
+    command = [
+      { 'PATH' => YOUTUBE_DL_ENV_PATH },
+      'python', YOUTUBE_DL,
+      video_id, '--extract-audio', '--audio-format', 'm4a',
+      '-o', path1
+    ]
+    puts command.join(' ')
+    stdout, stderr, status = Open3.capture3(*command)
+    if not File.exists? path1
+      raise "Command #{command.join(' ')} raised stderr #{stderr}"
+    end
+
+    FileUtils.mkdir_p '/tmp/youtube_22050_mono'
+    command = [
+      AVCONV, '-i', path1, '-vn', '-c:a', AAC_CODEC, '-profile:a', 'aac_he',
+      '-ac', '1', '-ar', '22050', '-b:a', '6k', '-cutoff', '18k',
+      '-y', path2
+    ]
+    puts command.join(' ')
+    stdout, stderr, status = Open3.capture3(*command)
+    if not File.exists? path2
+      raise "Command #{command.join(' ')} raised stderr #{stderr}"
+    end
+
+    File.delete path1
+  end
+  path2
 end
 
 def load_alignment_for_lines lines
@@ -220,6 +263,29 @@ class BackendApp < Sinatra::Base
     data = File.read excerpt_path
     File.delete excerpt_path
     content_type 'audio/wav'
+    response.write data
+  end
+
+  get '/excerpt.m4a' do
+    youtube_video_id = params[:video_id]
+    begin_millis  = Integer(params[:begin_millis])
+    end_millis    = Integer(params[:end_millis])
+    begin_time    = begin_millis / 1000.0
+    duration_time = (end_millis / 1000.0) - begin_time
+    _22050_mono_m4a_path = download_22050_mono_m4a youtube_video_id
+
+    excerpt_path = "/tmp/youtube_22050_mono/excerpt-#{begin_millis}-#{end_millis}.mp4"
+    FileUtils.mkdir_p '/tmp/youtube_22050_mono'
+    command = [
+      AVCONV, '-i', _22050_mono_m4a_path, '-acodec', 'copy',
+      '-ss', begin_time.to_s, '-t', duration_time.to_s,
+      '-y', excerpt_path
+    ]
+    puts command.join(' ')
+    stdout, stderr, status = Open3.capture3(*command)
+
+    data = File.read excerpt_path
+    content_type 'audio/mp4'
     response.write data
   end
 

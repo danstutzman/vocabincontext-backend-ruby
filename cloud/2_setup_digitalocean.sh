@@ -61,3 +61,23 @@ if [ "$USER_EXISTS" == "0" ]; then
   echo "ALTER USER vocabincontext WITH PASSWORD 'vocabincontext'" | sudo sudo -u postgres psql
 fi
 EOF
+
+tugboat ssh vocabincontext <<EOF
+set -ex
+sudo apt-get install -y build-essential yasm libx264-dev youtube-dl sox
+if [ ! -e libav ]; then
+  git clone git://git.libav.org/libav.git
+fi
+cd /usr/local/libav
+git checkout v11.4
+./configure \
+  --prefix=/usr/local \
+  --enable-nonfree \
+  --enable-gpl \
+  --disable-shared \
+  --enable-static \
+  --enable-libx264 \
+  --enable-libfdk-aac
+make
+make install
+EOF

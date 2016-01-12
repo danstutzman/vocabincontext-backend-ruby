@@ -90,7 +90,7 @@
       %input(placeholder='Video ID' size='5'){name: "#{line.song.source_num}.video_id[]", value: line.song.video && line.song.video.youtube_video_id}
       %button(type='submit' name="#{line.song.source_num}.set_video_id") Set
       - if line.alignment
-        %button{onclick: "audio = new Audio('/excerpt.wav?video_id=#{line.song.video.youtube_video_id}&begin_millis=#{line.alignment.begin_millis}&end_millis=#{line.alignment.end_millis}'); audio.play(); event.preventDefault();"} Play
+        %button{onclick: "audio = new Audio('/excerpt.m4a?video_id=#{line.song.video.youtube_video_id}&begin_millis=#{line.alignment.begin_millis}&end_millis=#{line.alignment.end_millis}'); audio.play(); event.preventDefault();"} Play
       - else
         %a{href: "/manually-align/#{line.song.source_num}"} Align
 
