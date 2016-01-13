@@ -49,10 +49,10 @@
   %button.search
 
   - @lines.each_with_index do |line, line_num|
-    .excerpt.nonexpanded{id: "excerpt-nonexpanded-#{line_num}", onclick: "expandExcerpt(#{line_num})"}
+    .excerpt.nonexpanded{id: "excerpt-nonexpanded-#{line_num}"}
       .cover{style: "background: url('#{line.song.api_query.cover_image_url}')"}
       .play-button(src='play_button4.png')
-      .quote
+      .quote{onclick: "expandExcerpt(#{line_num})"}
         - line.line_words.each_with_index do |line_word, w|
           - before_word = ((w == 0) ? '&ldquo;' : '') + line.line[line_word.begin_char_punctuation...line_word.begin_char_highlight]
           - actual_word = line.line[line_word.begin_char_highlight...line_word.end_char_highlight]
@@ -62,8 +62,8 @@
             != "#{before_word}<b>#{actual_word}</b>#{after_word}"
           - else
             != "#{before_word}#{actual_word}#{after_word}"
-    .excerpt.expanded{id: "excerpt-expanded-#{line_num}", onclick: "unexpandExcerpt(#{line_num})"}
-      .utterance
+    .excerpt.expanded{id: "excerpt-expanded-#{line_num}"}
+      .utterance{onclick: "unexpandExcerpt(#{line_num})"}
         - line.line_words.each_with_index do |line_word, w|
           - before_word = ((w == 0) ? '&ldquo;' : '') + line.line[line_word.begin_char_punctuation...line_word.begin_char_highlight]
           - actual_word = line.line[line_word.begin_char_highlight...line_word.end_char_highlight]
@@ -87,8 +87,7 @@
                 .spanish= between_words
                 .gloss= between_words
 
-      %input(placeholder='Video ID' size='5'){name: "#{line.song.source_num}.video_id[]", value: line.song.video && line.song.video.youtube_video_id}
-      %button(type='submit' name="#{line.song.source_num}.set_video_id") Set
+      %input(placeholder='Video ID' size='5'){name: "#{line.song.source_num}.video_id[]", value: line.song.video && line.song.video.youtube_video_id, onkeypress: "if (event.keyCode == 13) { x = new XMLHttpRequest(); x.open('POST', '/set-video-id', true); x.setRequestHeader('Content-type', 'application/x-www-form-urlencoded'); x.send('video_id=' + event.target.value + '&song_source_num=#{line.song.source_num}'); event.preventDefault(); }"}
       - if line.alignment
         %button{onclick: "audio = new Audio('/excerpt.aac?video_id=#{line.song.video.youtube_video_id}&begin_millis=#{line.alignment.begin_millis}&end_millis=#{line.alignment.end_millis}'); audio.play(); event.preventDefault();"} Play
       - else

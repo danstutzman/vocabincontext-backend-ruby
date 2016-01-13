@@ -180,24 +180,17 @@ class BackendApp < Sinatra::Base
   end
 
   post '/set-video-id' do
-    found_set_video_id = false
-    params.each do |key, value|
-      if match = key.match(/^([0-9]+).set_video_id$/)
-        found_set_video_id = true
-        source_num = match[1]
-        video_id = params["#{source_num}.video_id"].find { |value| value != '' } || ''
-        video = Video.find_by_song_source_num(source_num) ||
-          Video.new({song_source_num: source_num})
-        if video_id != ''
-          video.youtube_video_id = video_id
-          video.save!
-        else
-          video.destroy
-        end
-      end
+    song_source_num = params['song_source_num']
+    video_id        = params['video_id']
+    video = Video.find_by_song_source_num(song_source_num) ||
+      Video.new({song_source_num: song_source_num})
+    if video_id != ''
+      video.youtube_video_id = video_id
+      video.save!
+    else
+      video.destroy
     end
-    raise "Couldn't find set_video_id param" if !found_set_video_id
-    redirect params['redirect_url']
+    'OK'
   end
 
   get '/video-id-to-lines/:video_id.json', provides: :json do
