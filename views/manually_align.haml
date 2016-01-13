@@ -106,6 +106,13 @@
       var tdTag = document.getElementById('begin' + currentLineNum);
       tdTag.innerHTML = time;
       e.preventDefault();
+    } else if (e.charCode == 100) { // if 'd' key => delete
+      alignments[currentLineNum] = null;
+      var tdTag = document.getElementById('begin' + currentLineNum);
+      tdTag.innerHTML = '';
+      tdTag = document.getElementById('end' + currentLineNum);
+      tdTag.innerHTML = '';
+      e.preventDefault();
     }
   }
   function init() {

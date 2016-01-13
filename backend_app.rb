@@ -224,14 +224,16 @@ class BackendApp < Sinatra::Base
     load_alignment_for_lines @song.lines
     @song.lines.each_with_index do |line, line_num|
       new_data = data[line_num]
+      alignment = line.alignment || Alignment.new({
+        song_source_num: @song.source_num,
+        num_line_in_song: line_num,
+      })
       if new_data && new_data['begin_millis'] && new_data['end_millis']
-        alignment = line.alignment || Alignment.new({
-          song_source_num: @song.source_num,
-          num_line_in_song: line_num,
-        })
         alignment.begin_millis = new_data['begin_millis']
         alignment.end_millis   = new_data['end_millis']
         alignment.save!
+      else
+        alignment.destroy
       end
     end
     'OK'
