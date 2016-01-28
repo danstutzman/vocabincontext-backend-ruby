@@ -325,10 +325,11 @@ class BackendApp < Sinatra::Base
 
   get '/speed-up/:video_id.m4a' do
     video_id = params['video_id']
+    time_multiplier = params['time_multiplier']
     path1 = download_wav video_id
-    path3 = "/tmp/youtube/#{video_id}.x2.wav"
+    path3 = "/tmp/youtube/#{video_id}.x#{time_multiplier}.wav"
     if not File.exists? path3
-      `/usr/local/bin/sox #{path1} #{path3} tempo 2`
+      `/usr/local/bin/sox #{path1} #{path3} tempo #{time_multiplier}`
     end
     send_file path3
   end

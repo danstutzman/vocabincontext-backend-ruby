@@ -1,6 +1,7 @@
+- TIME_MULTIPLIER = 1.0
 %div(style='float:right')
   %audio(id='player' controls)
-    %source(src="/speed-up/#{@song.video.youtube_video_id}.m4a")
+    %source(src="/speed-up/#{@song.video.youtube_video_id}.m4a?time_multiplier=#{TIME_MULTIPLIER}")
   %br
   %button(style='width:200px; height:50px' onclick='save()') Save
 
@@ -24,6 +25,7 @@
   var lines = JSON.parse('#{@song.lines.to_json}');
   var alignments = JSON.parse('#{@song.lines.map { |line| line.alignment || {} }.to_json}');
   var videoId = JSON.parse('#{@song.video.youtube_video_id.to_json}');
+  var TIME_MULTIPLIER = #{TIME_MULTIPLIER};
 
 :javascript
   var currentLineNum = 0;
@@ -38,7 +40,7 @@
   var player = document.getElementById('player');
   function keypress(e) {
     if (e.charCode === 32) { // if space bar
-      var time = player.currentTime * 2;
+      var time = player.currentTime * TIME_MULTIPLIER;
       if (!alignments[currentLineNum]) {
         alignments[currentLineNum] = {};
       }
@@ -79,7 +81,8 @@
         }
       }
       if (alignments[currentLineNum].begin_millis) {
-        player.currentTime = alignments[currentLineNum].begin_millis / 2 / 1000;
+        player.currentTime = alignments[currentLineNum].begin_millis /
+          TIME_MULTIPLIER / 1000;
       }
       highlightCurrentLineNum();
       e.preventDefault();
@@ -93,12 +96,13 @@
         }
       }
       if (alignments[currentLineNum].begin_millis) {
-        player.currentTime = alignments[currentLineNum].begin_millis / 2 / 1000;
+        player.currentTime = alignments[currentLineNum].begin_millis /
+          TIME_MULTIPLIER / 1000;
       }
       highlightCurrentLineNum();
       e.preventDefault();
     } else if (e.charCode == 115) { // if 's' key = start delayed
-      var time = player.currentTime * 2;
+      var time = player.currentTime * TIME_MULTIPLIER;
       if (!alignments[currentLineNum]) {
         alignments[currentLineNum] = {};
       }
