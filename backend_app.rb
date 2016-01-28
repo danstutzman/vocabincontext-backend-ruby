@@ -8,8 +8,7 @@ require 'tilt/haml'
 
 YOUTUBE_DL_ENV_PATH = File.exists?('/usr/local/bin/ffmpeg') ?
   '/usr/local/Cellar/ffmpeg/2.8.3/bin' : '/usr/local/bin:/usr/bin'
-YOUTUBE_DL = File.exists?('/usr/local/bin/youtube-dl') ?
-  '/usr/local/bin/youtube-dl' : '/usr/bin/youtube-dl'
+YOUTUBE_DL = '/usr/local/bin/youtube-dl'
 AVCONV = File.exists?('/usr/local/bin/ffmpeg') ? '/usr/local/bin/ffmpeg' :
   '/usr/local/bin/avconv'
 AAC_CODEC = File.exists?('/usr/local/bin/avconv') ? 'libfdk_aac' : 'libvo_aacenc'

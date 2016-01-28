@@ -64,7 +64,9 @@ EOF
 
 tugboat ssh vocabincontext <<EOF
 set -ex
-sudo apt-get install -y build-essential yasm libx264-dev youtube-dl sox
+sudo apt-get install -y python-pip
+sudo pip install --upgrade youtube_dl
+sudo apt-get install -y build-essential yasm libx264-dev sox
 if [ ! -e libav ]; then
   git clone git://git.libav.org/libav.git
 fi
