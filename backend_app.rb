@@ -13,6 +13,7 @@ YOUTUBE_DL = File.exists?('/usr/local/bin/youtube-dl') ?
 AVCONV = File.exists?('/usr/local/bin/ffmpeg') ? '/usr/local/bin/ffmpeg' :
   '/usr/local/bin/avconv'
 AAC_CODEC = File.exists?('/usr/local/bin/avconv') ? 'libfdk_aac' : 'libvo_aacenc'
+AAC_BITRATE = (AAC_CODEC == 'libfdk_aac') ? '6k' : '32k'
 
 def download_wav video_id
   FileUtils.mkdir_p '/tmp/youtube'
@@ -54,7 +55,7 @@ def download_22050_mono_m4a video_id
     FileUtils.mkdir_p '/tmp/youtube_22050_mono'
     command = [
       AVCONV, '-i', path1, '-vn', '-c:a', AAC_CODEC, '-profile:a', 'aac_he',
-      '-ac', '1', '-ar', '22050', '-b:a', '6k', '-cutoff', '18k',
+      '-ac', '1', '-ar', '22050', '-b:a', AAC_BITRATE, '-cutoff', '18k',
       '-y', path2
     ]
     puts command.join(' ')
