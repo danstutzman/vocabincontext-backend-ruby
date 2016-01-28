@@ -50,7 +50,7 @@
 
   - @lines.each_with_index do |line, line_num|
     .excerpt.nonexpanded{id: "excerpt-nonexpanded-#{line_num}"}
-      .cover{style: "background: url('#{line.song.api_query.cover_image_url}')"}
+      .cover{style: "background: url('#{line.song.api_query && line.song.api_query.cover_image_url}')"}
       .play-button(src='play_button4.png')
       .quote{onclick: "expandExcerpt(#{line_num})"}
         - line.line_words.each_with_index do |line_word, w|
@@ -93,7 +93,7 @@
       - elsif line.song.video
         %a{href: "/manually-align/#{line.song.source_num}"} Align
 
-      .cover{style: "background: url('#{line.song.api_query.cover_image_url}')"}
+      .cover{style: "background: url('#{line.song.api_query && line.song.api_query.cover_image_url}')"}
       .song-name= line.song.song_name[0...20]
       .artist-name= line.song.artist_name[0...20]
 
