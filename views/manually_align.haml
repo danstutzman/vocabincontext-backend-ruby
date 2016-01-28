@@ -22,9 +22,9 @@
 
 :javascript
   var num_lines = #{@song.lines.size};
-  var lines = JSON.parse('#{@song.lines.to_json}');
-  var alignments = JSON.parse('#{@song.lines.map { |line| line.alignment || {} }.to_json}');
-  var videoId = JSON.parse('#{@song.video.youtube_video_id.to_json}');
+  var lines = #{@song.lines.to_json};
+  var alignments = #{@song.lines.map { |line| line.alignment || {} }.to_json};
+  var videoId = #{@song.video.youtube_video_id.to_json};
   var TIME_MULTIPLIER = #{TIME_MULTIPLIER};
 
 :javascript
