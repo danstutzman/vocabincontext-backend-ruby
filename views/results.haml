@@ -87,7 +87,7 @@
                 .spanish= between_words
                 .gloss= between_words
 
-      %input(placeholder='Video ID' size='5'){name: "#{line.song.source_num}.video_id[]", value: line.song.video && line.song.video.youtube_video_id, onkeypress: "if (event.keyCode == 13) { x = new XMLHttpRequest(); x.open('POST', '/set-video-id', true); x.setRequestHeader('Content-type', 'application/x-www-form-urlencoded'); x.send('video_id=' + event.target.value + '&song_source_num=#{line.song.source_num}'); event.preventDefault(); }"}
+      %input(placeholder='Video ID' size='5'){value: line.song.video && line.song.video.youtube_video_id, onkeypress: "if (event.keyCode == 13) { x = new XMLHttpRequest(); x.open('POST', '/set-video-id', true); x.setRequestHeader('Content-type', 'application/x-www-form-urlencoded'); x.send('video_id=' + event.target.value + '&song_source_num=#{line.song.source_num}'); event.preventDefault(); }"}
       - if line.alignment
         %button{onclick: "audio = new Audio('/excerpt.aac?video_id=#{line.song.video.youtube_video_id}&begin_millis=#{line.alignment.begin_millis}&end_millis=#{line.alignment.end_millis}'); audio.play(); event.preventDefault();"} Play
       - elsif line.song.video
