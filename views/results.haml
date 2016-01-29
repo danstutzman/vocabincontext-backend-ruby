@@ -37,13 +37,41 @@
 
   .excerpt { width: 320px; min-height: 64px; border-bottom: 1px #777 solid; cursor: pointer; position: relative; clear: both; }
   .excerpt.nonexpanded { height: 64px; overflow: hidden; }
-  .excerpt .cover { width: 64px; height: 64px; margin-left: 0px; float: right; }
+  .excerpt .cover { width: 64px; height: 64px; position: absolute; right: 0; bottom: 0; }
   .excerpt.nonexpanded .cover { -webkit-filter: grayscale(100%); filter: grayscale(100%); }
   .excerpt.expanded { display: none; }
-  .excerpt .play-button { width: 64px; height: 64px; background: url('play_button4.png'); background-size: 64px 64px; position: absolute; right: 0; }
+  .excerpt .play-button { width: 64px; height: 64px; background: url('play_button4.png'); background-size: 64px 64px; position: absolute; right: 0; bottom: 0; }
   .excerpt .quote { font-size: 15pt; margin-left: 5px; margin-right: 75px; line-height: 125%; padding-top: 5px; }
   .excerpt .song-name { font-style: italic; font-size: 16pt; margin-left: 5px; }
   .excerpt .artist-name { font-size: 16pt; margin-left: 5px; }
+  .excerpt .spinner { position: absolute; right: 0; bottom: 0; display: none; }
+
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: solid #FFF;
+    border-width: 7px 0px 0px 0px;
+    margin: 7px; /* (64px - 50px) / 2 */
+    -webkit-border-radius: 50%;
+       -moz-border-radius: 50%;
+            border-radius: 50%;
+    -webkit-animation: spin 0.5s infinite linear;
+       -moz-animation: spin 0.5s infinite linear;
+         -o-animation: spin 0.5s infinite linear;
+            animation: spin 0.5s infinite linear;
+  }
+  @-webkit-keyframes spin {
+    from {-webkit-transform: rotate(0deg);} to {-webkit-transform: rotate(359deg);}
+  }
+  @-moz-keyframes spin {
+    from {-moz-transform: rotate(0deg);} to {-moz-transform: rotate(359deg);}
+  }
+  @-o-keyframes spin {
+    from {-o-transform: rotate(0deg);} to {-o-transform: rotate(359deg);}
+  }
+  @keyframes spin{
+    from {transform: rotate(0deg);} to {transform: rotate(359deg);}
+  }
 
 %form(method='GET' action='/')
   %input#query(name='q' placeholder='Filter by word')
@@ -52,7 +80,7 @@
   - @lines.each_with_index do |line, line_num|
     .excerpt.nonexpanded{id: "excerpt-nonexpanded-#{line_num}"}
       .cover{style: "background: url('#{line.song.api_query && line.song.api_query.cover_image_url}')"}
-      .play-button(src='play_button4.png')
+      .play-button(src='play_button4.png'){onclick: "expandExcerpt(#{line_num}); playExcerpt(#{line_num})"}
       .quote{onclick: "expandExcerpt(#{line_num})"}
         - line.line_words.each_with_index do |line_word, w|
           - before_word = ((w == 0) ? '&ldquo;' : '') + line.line[line_word.begin_char_punctuation...line_word.begin_char_highlight]
@@ -89,14 +117,17 @@
                 .gloss= between_words
 
       %input(placeholder='Video ID' size='5'){value: line.song.video && line.song.video.youtube_video_id, onkeypress: "if (event.keyCode == 13) { x = new XMLHttpRequest(); x.open('POST', '/set-video-id', true); x.setRequestHeader('Content-type', 'application/x-www-form-urlencoded'); x.send('video_id=' + event.target.value + '&song_source_num=#{line.song.source_num}'); event.preventDefault(); }"}
-      - if line.alignment
-        %button{onclick: "audio = new Audio('/excerpt.aac?video_id=#{line.song.video.youtube_video_id}&begin_millis=#{line.alignment.begin_millis}&end_millis=#{line.alignment.end_millis}'); audio.play(); event.preventDefault();"} Play
-      - elsif line.song.video
+      - if line.alignment.nil? && line.song.video
         %a{href: "/manually-align/#{line.song.source_num}"} Align
 
       .cover{style: "background: url('#{line.song.api_query && line.song.api_query.cover_image_url}')"}
+      .play-button{id: "expanded-play-button-#{line_num}", onclick: "playExcerpt(#{line_num})"}(src='play_button4.png' style='display: none')
       .song-name= line.song.song_name[0...20]
       .artist-name= line.song.artist_name[0...20]
+      .spinner{id: "spinner-#{line_num}"}
+
+:javascript
+  var lineByLineNum = #{JSON.generate(@lines.map { |line| {video_id: line.song.video && line.song.video.youtube_video_id, begin_millis: line.alignment && line.alignment.begin_millis, end_millis: line.alignment && line.alignment.end_millis}})};
 
 :javascript
   currentlyExpandedLineNum = null;
@@ -112,6 +143,25 @@
     document.getElementById('excerpt-nonexpanded-' + lineNum).style.display = 'none';
     document.getElementById('excerpt-expanded-' + lineNum).style.display = 'block';
     currentlyExpandedLineNum = lineNum;
+  }
+  function playExcerpt(lineNum) {
+    var spinner = document.getElementById('spinner-' + lineNum);
+    spinner.style.display = 'block';
+
+    var playButton = document.getElementById('expanded-play-button-' + lineNum);
+    playButton.style.display = 'none';
+
+    var line = lineByLineNum[lineNum];
+    var audio = new Audio('/excerpt.aac?video_id=' + line.video_id
+      + '&begin_millis=' + line.begin_millis
+      + '&end_millis=' + line.end_millis);
+    audio.addEventListener('playing', function() {
+      spinner.style.display = 'none';
+    }, true);
+    audio.addEventListener('ended', function() {
+      playButton.style.display = 'block';
+    }, true);
+    audio.play();
   }
 :javascript
   document.getElementById('query').focus();
