@@ -8,6 +8,7 @@
   .utterance {
     margin-bottom: 10px;
   }
+  .excerpt.nonexpanded .utterance { margin-right: 64px; }
   .utterance .word {
     padding-right: 0px;
     display: inline-block;
@@ -17,6 +18,7 @@
     font-style: italic;
     margin-right: 0px;
     font-size: 16pt;
+    line-height: 100%;
   }
   .utterance .word .gloss {
     color: #aaa;
@@ -24,6 +26,7 @@
     margin-right: 0px;
     font-size: 10pt;
     font-family: 'AvenirNextCondensed-UltraLight';
+    line-height: 50%;
   }
   .rating1 {
     color: green;
@@ -81,16 +84,29 @@
     .excerpt.nonexpanded{id: "excerpt-nonexpanded-#{line_num}"}
       .cover{style: "background: url('#{line.song.api_query && line.song.api_query.cover_image_url}')"}
       .play-button(src='play_button4.png'){onclick: "expandExcerpt(#{line_num}); playExcerpt(#{line_num})"}
-      .quote{onclick: "expandExcerpt(#{line_num})"}
+      .utterance{onclick: "expandExcerpt(#{line_num})"}
         - line.line_words.each_with_index do |line_word, w|
           - before_word = ((w == 0) ? '&ldquo;' : '') + line.line[line_word.begin_char_punctuation...line_word.begin_char_highlight]
           - actual_word = line.line[line_word.begin_char_highlight...line_word.end_char_highlight]
           - after_word = line.line[line_word.end_char_highlight...line_word.end_char_punctuation] + ((w == line.line_words.size - 1) ? '&rdquo;' : '')
           - actual_word = "<span class='rating#{line_word.rating}'>" + actual_word + "</span>"
-          - if line_word.word_id == @word_id
-            != "#{before_word}<b>#{actual_word}</b>#{after_word}"
-          - else
-            != "#{before_word}#{actual_word}#{after_word}"
+          .word
+            .spanish
+              - if line_word.word_id == @word_id
+                != "#{before_word}<b>#{actual_word}</b>#{after_word}"
+              - else
+                != "#{before_word}#{actual_word}#{after_word}"
+            .gloss
+              - if line_word.translation
+                != "#{before_word}#{line_word.translation.english_word}#{after_word}"
+              - else
+                &nbsp;
+          - if w < line.line_words.size - 1
+            - between_words = line.line[line_word.end_char_punctuation...line.line_words[w + 1].begin_char_punctuation]
+            - if between_words.strip != ''
+              .word
+                .spanish= between_words
+                .gloss= between_words
     .excerpt.expanded{id: "excerpt-expanded-#{line_num}"}
       .utterance{onclick: "unexpandExcerpt(#{line_num})"}
         - line.line_words.each_with_index do |line_word, w|
