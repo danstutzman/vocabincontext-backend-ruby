@@ -4,6 +4,7 @@ require './models'
 require 'open3'
 require 'sinatra/activerecord'
 require 'sinatra/base'
+require 'sinatra/cross_origin'
 require 'tilt/haml'
 
 YOUTUBE_DL_ENV_PATH = File.exists?('/usr/local/bin/ffmpeg') ?
@@ -85,9 +86,11 @@ end
 
 class BackendApp < Sinatra::Base
   register Sinatra::ActiveRecordExtension
+  register Sinatra::CrossOrigin
 
   configure do
     set :haml, format: :html5, escape_html: true, ugly: true
+    enable :cross_origin
   end
 
   get '/' do
@@ -337,5 +340,9 @@ class BackendApp < Sinatra::Base
   get '/album-cover-path/:sha1' do
     content_type 'image/jpeg'
     File.read("/Users/daniel/dev/search-music-apis/spotify_album_covers/#{params['sha1']}")
+  end
+
+  get '/api', provides: :json do
+    JSON.generate(['OK'])
   end
 end
