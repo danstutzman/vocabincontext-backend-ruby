@@ -20,28 +20,28 @@ const RIGHT_DOUBLE_QUOTE = "\u201d"
 var _, _ = fmt.Println()
 
 type ExcerptWord struct {
-	Before  *string `json:",omitempty"`
-	Word    *string `json:",omitempty"`
-	After   *string `json:",omitempty"`
-	Gloss   *string `json:",omitempty"`
-	Rating  *int    `json:",omitempty"`
-	Between *string `json:",omitempty"`
+	Before  *string `json:"before,omitempty"`
+	Word    *string `json:"word,omitempty"`
+	After   *string `json:"after,omitempty"`
+	Gloss   *string `json:"gloss,omitempty"`
+	Rating  *int    `json:"rating,omitempty"`
+	Between *string `json:"between,omitempty"`
 }
 
 type Excerpt struct {
 	Text          string
-	BeginMillis   *int    `json:",omitempty"`
-	EndMillis     *int    `json:",omitempty"`
-	ArtistName    *string `json:",omitempty"`
-	SongName      *string `json:",omitempty"`
-	VideoId       *string `json:",omitempty"`
-	CoverImageUrl *string `json:",omitempty"`
-	Words         []ExcerptWord
-	LineId        int
+	BeginMillis   *int          `json:"begin_millis,omitempty"`
+	EndMillis     *int          `json:"end_millis,omitempty"`
+	ArtistName    *string       `json:"artist_name,omitempty"`
+	SongName      *string       `json:"song_name,omitempty"`
+	VideoId       *string       `json:"video_id,omitempty"`
+	CoverImageUrl *string       `json:"cover_image_url,omitempty"`
+	Words         []ExcerptWord `json:"words"`
+	LineId        int           `json:"line_id",omitempty"`
 }
 
 type ExcerptList struct {
-	Lines []Excerpt
+	Lines []Excerpt `json:"lines"`
 }
 
 func logTimeElapsed(name string, start time.Time) {
