@@ -97,14 +97,14 @@ type ExcerptList struct {
 	Lines []Excerpt
 }
 
-func selectLines(db *sql.DB) []*Line {
+func selectLines(db *sql.DB) ([]*Line, error) {
 	lines := []*Line{}
 	sql := `select line_id, song_source_num, song_id, line
 	  from lines
   	where song_source_num in (select song_source_num from alignments)`
 	rows, err := db.Query(sql)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Error from db.Query: %s", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -115,18 +115,18 @@ func selectLines(db *sql.DB) []*Line {
 			&line.song_id,
 			&line.line)
 		if err != nil {
-			log.Fatal(err)
+			return nil, fmt.Errorf("Error from rows.Scan: %s", err)
 		}
 		lines = append(lines, &line)
 	}
 	err = rows.Err()
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Error from rows.Err: %s", err)
 	}
-	return lines
+	return lines, nil
 }
 
-func selectAlignments(sourceNums []int, db *sql.DB) []*Alignment {
+func selectAlignments(sourceNums []int, db *sql.DB) ([]*Alignment, error) {
 	alignments := []*Alignment{}
 	sql := fmt.Sprintf(`select song_source_num,
       num_line_in_song,
@@ -136,7 +136,7 @@ func selectAlignments(sourceNums []int, db *sql.DB) []*Alignment {
   	where song_source_num in (%s)`, intSliceToSqlIn(sourceNums))
 	rows, err := db.Query(sql)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Error from db.Query: %s", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -147,15 +147,15 @@ func selectAlignments(sourceNums []int, db *sql.DB) []*Alignment {
 			&alignment.begin_millis,
 			&alignment.end_millis)
 		if err != nil {
-			log.Fatal(err)
+			return nil, fmt.Errorf("Error from rows.Scan: %s", err)
 		}
 		alignments = append(alignments, &alignment)
 	}
 	err = rows.Err()
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Error from rows.Err: %s", err)
 	}
-	return alignments
+	return alignments, nil
 }
 
 func selectTranslations(inputs []string, db *sql.DB) []*Translation {
@@ -185,7 +185,7 @@ func selectTranslations(inputs []string, db *sql.DB) []*Translation {
 	return translations
 }
 
-func selectSongs(songIds []int, db *sql.DB) []*Song {
+func selectSongs(songIds []int, db *sql.DB) ([]*Song, error) {
 	songs := []*Song{}
 	sql := fmt.Sprintf(`select songs.song_id,
 			songs.song_name,
@@ -218,17 +218,17 @@ func selectSongs(songIds []int, db *sql.DB) []*Song {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return songs
+	return songs, nil
 }
 
-func selectWordRatings(words []string, db *sql.DB) []*WordRating {
+func selectWordRatings(words []string, db *sql.DB) ([]*WordRating, error) {
 	wordRatings := []*WordRating{}
 	sql := fmt.Sprintf(`select word, rating
 	  from word_ratings
   	where word in (%s)`, stringSliceToSqlIn(words))
 	rows, err := db.Query(sql)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Error from db.Query: %s", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -237,15 +237,15 @@ func selectWordRatings(words []string, db *sql.DB) []*WordRating {
 			&wordRating.word,
 			&wordRating.rating)
 		if err != nil {
-			log.Fatal(err)
+			return nil, fmt.Errorf("Error from rows.Scan: %s", err)
 		}
 		wordRatings = append(wordRatings, &wordRating)
 	}
 	err = rows.Err()
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Error from rows.Err: %s", err)
 	}
-	return wordRatings
+	return wordRatings, nil
 }
 
 func intSliceToSqlIn(ids []int) string {
@@ -321,7 +321,7 @@ func selectLineWords(lineIds []int, db *sql.DB) ([]*LineWord, error) {
 	fmt.Println(sql)
 	rows, err := db.Query(sql)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Error from db.Query: %s", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -347,7 +347,7 @@ func selectLineWords(lineIds []int, db *sql.DB) ([]*LineWord, error) {
 	return lineWords, nil
 }
 
-func selectWords(wordIds []int, db *sql.DB) []*Word {
+func selectWords(wordIds []int, db *sql.DB) ([]*Word, error) {
 	words := []*Word{}
 	sql := fmt.Sprintf(`select word_id
 				from words
@@ -355,7 +355,7 @@ func selectWords(wordIds []int, db *sql.DB) []*Word {
 	fmt.Println(sql)
 	rows, err := db.Query(sql)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Error from db.Query: %s", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -363,15 +363,15 @@ func selectWords(wordIds []int, db *sql.DB) []*Word {
 		err := rows.Scan(
 			&word.word_id)
 		if err != nil {
-			log.Fatal(err)
+			return nil, fmt.Errorf("Error from rows.Scan: %s", err)
 		}
 		words = append(words, &word)
 	}
 	err = rows.Err()
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Error from rows.Err: %s", err)
 	}
-	return words
+	return words, nil
 }
 
 func IfString(condition bool, then string, else_ string) string {
@@ -398,7 +398,11 @@ func main() {
 }
 
 func computeExcerptList(db *sql.DB) ExcerptList {
-	lines := selectLines(db)
+	lines, err := selectLines(db)
+	if err != nil {
+		log.Fatal(fmt.Errorf("Error from selectLines: %s", err))
+	}
+
 	lineByLineId := map[int]*Line{}
 	for _, line := range lines {
 		lineByLineId[line.line_id] = line
@@ -425,7 +429,10 @@ func computeExcerptList(db *sql.DB) ExcerptList {
 	}
 	sourceNums = uniqInts(sourceNums)
 
-	alignments := selectAlignments(sourceNums, db)
+	alignments, err := selectAlignments(sourceNums, db)
+	if err != nil {
+		log.Fatal(fmt.Errorf("Error from selectAlignments: %s", err))
+	}
 
 	type SourceNumAndLineNum struct {
 		source_num       int
@@ -452,6 +459,9 @@ func computeExcerptList(db *sql.DB) ExcerptList {
 	}
 
 	translations := selectTranslations(translationInputs, db)
+	if err != nil {
+		log.Fatal(fmt.Errorf("Error from selectTranslations: %s", err))
+	}
 
 	translationByInput := map[string]*Translation{}
 	for _, translation := range translations {
@@ -472,7 +482,10 @@ func computeExcerptList(db *sql.DB) ExcerptList {
 	}
 	songIds = uniqInts(songIds)
 
-	songs := selectSongs(songIds, db)
+	songs, err := selectSongs(songIds, db)
+	if err != nil {
+		log.Fatal(fmt.Errorf("Error from selectSongs: %s", err))
+	}
 
 	songBySongId := map[int]*Song{}
 	for _, song := range songs {
@@ -488,7 +501,10 @@ func computeExcerptList(db *sql.DB) ExcerptList {
 			wordIds = append(wordIds, lineWord.word_id)
 		}
 	}
-	words := selectWords(wordIds, db)
+	words, err := selectWords(wordIds, db)
+	if err != nil {
+		log.Fatal(fmt.Errorf("Error from selectWords: %s", err))
+	}
 
 	wordByWordId := map[int]*Word{}
 	for _, word := range words {
@@ -501,7 +517,10 @@ func computeExcerptList(db *sql.DB) ExcerptList {
 	}
 	wordWords = uniqStrings(wordWords)
 
-	wordRatings := selectWordRatings(wordWords, db)
+	wordRatings, err := selectWordRatings(wordWords, db)
+	if err != nil {
+		log.Fatal(fmt.Errorf("Error from selectWordRatings: %s", err))
+	}
 
 	wordRatingByWord := map[string]*WordRating{}
 	for _, wordRating := range wordRatings {
