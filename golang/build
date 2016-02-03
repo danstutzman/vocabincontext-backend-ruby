@@ -1,2 +1,2 @@
 #!/bin/bash -ex
-go run backend.go relevance.go select.go
+go run backend.go relevance.go select.go row_types.go
