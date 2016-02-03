@@ -45,6 +45,7 @@ files:
   - /var/log/unicorn.log
   - /var/log/ufw.log
   - /var/log/auth.log
+  - /var/log/supervisor/*.log
 destination:
   host: logs.papertrailapp.com
   port: 45259

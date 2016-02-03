@@ -3,10 +3,12 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"flag"
 	"fmt"
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -80,9 +82,60 @@ func IfString(condition bool, then string, else_ string) string {
 }
 
 func main() {
-	db, err := sql.Open("postgres", "user=postgres dbname=postgres sslmode=disable")
+	type CommandLineArgs struct {
+		postgresCredentialsPath *string
+	}
+	args := CommandLineArgs{
+		postgresCredentialsPath: flag.String(
+			"postgres_credentials_path", "", "JSON file with username and password"),
+	}
+	flag.Parse()
+
+	if *args.postgresCredentialsPath == "" {
+		log.Fatal("Missing -postgres_credentials_path")
+	}
+	postgresCredentialsFile, err := os.Open(*args.postgresCredentialsPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(fmt.Errorf("Couldn't os.Open postgres_credentials: %s", err))
+	}
+	defer postgresCredentialsFile.Close()
+
+	type PostgresCredentials struct {
+		Username     *string
+		Password     *string
+		DatabaseName *string
+		SSLMode      *string
+	}
+	postgresCredentials := PostgresCredentials{}
+	decoder := json.NewDecoder(postgresCredentialsFile)
+	if err = decoder.Decode(&postgresCredentials); err != nil {
+		log.Fatalf("Error using decoder.Decode to parse JSON at %s: %s",
+			args.postgresCredentialsPath, err)
+	}
+
+	dataSourceName := ""
+	if postgresCredentials.Username != nil {
+		dataSourceName += " user=" + *postgresCredentials.Username
+	}
+	if postgresCredentials.Password != nil {
+		dataSourceName += " password=" + *postgresCredentials.Password
+	}
+	if postgresCredentials.DatabaseName != nil {
+		dataSourceName += " dbname=" + *postgresCredentials.DatabaseName
+	}
+	if postgresCredentials.SSLMode != nil {
+		dataSourceName += " sslmode=" + *postgresCredentials.SSLMode
+	}
+
+	db, err := sql.Open("postgres", dataSourceName)
+	if err != nil {
+		log.Fatal(fmt.Errorf("Error from sql.Open: %s", err))
+	}
+
+	ignored := 0
+	err = db.QueryRow("SELECT 1").Scan(&ignored)
+	if err != nil {
+		log.Fatal(fmt.Errorf("Error from db.QueryRow: %s", err))
 	}
 
 	http.HandleFunc("/api", func(writer http.ResponseWriter, request *http.Request) {

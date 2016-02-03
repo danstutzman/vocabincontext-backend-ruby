@@ -83,3 +83,26 @@ git checkout v11.4
 make
 make install
 EOF
+
+tugboat ssh vocabincontext <<EOF
+set -ex
+curl -O https://storage.googleapis.com/golang/go1.5.3.linux-386.tar.gz
+tar xvzf go1.5.3.linux-386.tar.gz
+rm -rf /usr/local/go
+mv go /usr/local/go
+
+sudo apt-get install -y supervisor
+sudo tee /etc/vocabincontext_postgres_credentials.json <<EOF2
+{
+  "Username": "vocabincontext",
+  "Password": "vocabincontext",
+  "DatabaseName": "postgres",
+  "SSLMode": "disable"
+}
+EOF2
+sudo tee /etc/supervisor/conf.d/gobackend.conf <<EOF2
+[program:backend]
+command=/var/www/vocabincontext/golang/backend --postgres_credentials_path /etc/vocabincontext_postgres_credentials.json
+EOF2
+
+EOF
