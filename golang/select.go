@@ -9,12 +9,53 @@ import (
 	"time"
 )
 
-func selectLines(db *sql.DB) ([]*Line, error) {
+func selectLineIdsForQuery(queryFilter string, db *sql.DB) ([]int, error) {
+	logTimeElapsed("    selectLineIdsForQuery", time.Now())
+	lineIds := []int{}
+	query := `select line_id
+	  from line_words
+  	where word_id in (select word_id from words where word = $1)`
+	rows, err := db.Query(query, queryFilter)
+	if err != nil {
+		return nil, fmt.Errorf("Error from db.Query: %s", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var lineId int
+		err := rows.Scan(&lineId)
+		if err != nil {
+			return nil, fmt.Errorf("Error from rows.Scan: %s", err)
+		}
+		lineIds = append(lineIds, lineId)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, fmt.Errorf("Error from rows.Err: %s", err)
+	}
+	return lineIds, nil
+}
+
+func selectLines(possibleLineIdsFilter []int, db *sql.DB) ([]*Line, error) {
 	logTimeElapsed("    selectLines", time.Now())
 	lines := []*Line{}
-	query := `select line_id, song_source_num, song_id, line
+	var query string
+	if possibleLineIdsFilter == nil {
+		query = `select line_id,
+			song_source_num,
+			song_id,
+			line,
+			num_line_in_song
 	  from lines
   	where song_source_num in (select song_source_num from alignments)`
+	} else {
+		query = fmt.Sprintf(`select line_id,
+			song_source_num,
+			song_id,
+			line,
+			num_line_in_song
+	  from lines
+  	where line_id in (%s)`, intSliceToSqlIn(possibleLineIdsFilter))
+	}
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("Error from db.Query: %s", err)
@@ -26,7 +67,8 @@ func selectLines(db *sql.DB) ([]*Line, error) {
 			&line.line_id,
 			&line.song_source_num,
 			&line.song_id,
-			&line.line)
+			&line.line,
+			&line.num_line_in_song)
 		if err != nil {
 			return nil, fmt.Errorf("Error from rows.Scan: %s", err)
 		}

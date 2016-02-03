@@ -139,7 +139,9 @@ func main() {
 	}
 
 	http.HandleFunc("/api", func(writer http.ResponseWriter, request *http.Request) {
-		excerptList, err := computeExcerptList(db)
+		query := request.FormValue("q")
+
+		excerptList, err := computeExcerptList(query, db)
 		if err != nil {
 			log.Fatal(fmt.Errorf("Error from computeExcerptList: %s", err))
 		}
@@ -151,10 +153,19 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
-func computeExcerptList(db *sql.DB) (*ExcerptList, error) {
+func computeExcerptList(query string, db *sql.DB) (*ExcerptList, error) {
 	defer logTimeElapsed("  computeExcerptList", time.Now())
 
-	lines, err := selectLines(db)
+	var possibleLineIdsFilter []int
+	var err error
+	if query != "" {
+		possibleLineIdsFilter, err = selectLineIdsForQuery(query, db)
+		if err != nil {
+			return nil, fmt.Errorf("Error from selectLineIdsForQuery: %s", err)
+		}
+	}
+
+	lines, err := selectLines(possibleLineIdsFilter, db)
 	if err != nil {
 		return nil, fmt.Errorf("Error from selectLines: %s", err)
 	}
