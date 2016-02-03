@@ -43,7 +43,8 @@ def download_22050_mono_m4a video_id
     command = [
       { 'PATH' => YOUTUBE_DL_ENV_PATH },
       'python', YOUTUBE_DL,
-      video_id, '--extract-audio', '--audio-format', 'm4a',
+      "http://www.youtube.com/watch?v=#{video_id}",
+      '--extract-audio', '--audio-format', 'm4a',
       '-o', path1
     ]
     puts command.join(' ')
