@@ -93,95 +93,6 @@ class BackendApp < Sinatra::Base
     enable :cross_origin
   end
 
-  get '/' do
-    query = params['q'] || ''
-    if query == ''
-      @word_id = nil
-      @lines = Line.where(
-        'song_source_num in (select song_source_num from alignments)')
-      matching_line_words = []
-    else
-      @word_id = Word.find_by_word(query).word_id
-      matching_line_words = LineWord.joins(:line).where(word_id: @word_id)
-      @lines = Line.where('line_id IN (?)',
-        matching_line_words.map { |lw| lw.line_id }.uniq)
-    end
-    @lines = @lines.includes(:line_words)
-    load_alignment_for_lines @lines
-    line_by_line_id = {}
-    @lines.each do |line|
-      line_by_line_id[line.line_id] = line
-    end
-    matching_line_words.each do |line_word|
-      line_by_line_id[line_word.line_id].num_repetitions_of_search_word ||= 0
-      line_by_line_id[line_word.line_id].num_repetitions_of_search_word += 1
-    end
-
-    translation_inputs = []
-    @lines.each do |line|
-      translation_inputs += line.line_words.map { |line_word|
-        line_word.part_of_speech + '-' + line_word.word_lowercase
-      }
-    end
-    translations = Translation.where('part_of_speech_and_spanish_word in (?)',
-      translation_inputs.uniq)
-    translations_by_input = {}
-    translations.each do |translation|
-      translations_by_input[translation.part_of_speech_and_spanish_word] = translation
-    end
-    @lines.each do |line|
-      line.line_words.each do |line_word|
-        line_word.translation = translations_by_input[
-          line_word.part_of_speech + '-' + line_word.word_lowercase]
-      end
-    end
-
-    songs = Song.where('song_id IN (?)', @lines.map { |line| line.song_id }.uniq)
-    songs = songs.includes(:video).includes(:api_query)
-    song_by_song_id = {}
-    songs.each { |song| song_by_song_id[song.song_id] = song }
-    @lines.each { |line| line.song = song_by_song_id[line.song_id] }
-
-    word_ids = []
-    @lines.each { |line| word_ids += line.line_words.map { |lw| lw.word_id } }
-    words = Word.where('word_id in (?)', word_ids)
-    word_by_word_id = {}
-    words.each { |word| word_by_word_id[word.word_id] = word }
-
-    word_ratings = WordRating.where('word in (?)', words.map { |word| word.word }.uniq)
-    word_rating_by_word = {}
-    word_ratings.each do |word_rating|
-      word_rating_by_word[word_rating.word] = word_rating.rating
-    end
-    @lines.each do |line|
-      line.line_words.each do |line_word|
-        line_word.word = word_by_word_id[line_word.word_id]
-        line_word.rating = word_rating_by_word[line_word.word.word] || 3
-      end
-    end
-
-    text_to_line = {}
-    @lines.each do |line|
-      downcase = line.line_words.map { |lw| lw.word.word }.join(' ')
-      text_to_line[downcase] = line if !text_to_line[downcase]
-      if text_to_line[downcase].num_repetitions_of_line.nil?
-        text_to_line[downcase].num_repetitions_of_line = 0
-      end
-      text_to_line[downcase].num_repetitions_of_line += 1
-    end
-    @lines = text_to_line.values
-
-    @lines = @lines.sort_by do |line|
-      [
-        line.alignment ? 1 : 2,
-        -line.num_repetitions_of_line,
-        -(line.num_repetitions_of_search_word || 0) / line.line_words.size.to_f,
-      ]
-    end
-
-    haml :results
-  end
-
   post '/set-video-id' do
     song_source_num = params['song_source_num']
     video_id        = params['video_id']
@@ -340,9 +251,5 @@ class BackendApp < Sinatra::Base
   get '/album-cover-path/:sha1' do
     content_type 'image/jpeg'
     File.read("/Users/daniel/dev/search-music-apis/spotify_album_covers/#{params['sha1']}")
-  end
-
-  get '/api', provides: :json do
-    JSON.generate(['OK'])
   end
 end
