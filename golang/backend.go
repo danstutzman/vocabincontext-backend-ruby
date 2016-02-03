@@ -139,6 +139,13 @@ func main() {
 	}
 
 	http.HandleFunc("/api", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Access-Control-Allow-Origin", "*")
+		writer.Header().Set("Access-Control-Allow-Methods",
+			"POST, GET, OPTIONS, PUT, DELETE")
+		writer.Header().Set("Access-Control-Allow-Headers",
+			"Accept, Content-Type, Content-Length, Accept-Encoding, "+
+				"X-CSRF-Token, Authorization")
+
 		query := request.FormValue("q")
 
 		excerptList, err := computeExcerptList(query, db)
