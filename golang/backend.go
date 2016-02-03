@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 )
 
 const LEFT_DOUBLE_QUOTE = "\u201c"
@@ -39,6 +40,11 @@ type Excerpt struct {
 
 type ExcerptList struct {
 	Lines []Excerpt
+}
+
+func logTimeElapsed(name string, start time.Time) {
+	elapsed := time.Since(start)
+	log.Printf("%s took %d ms", name, elapsed/time.Millisecond)
 }
 
 func uniqInts(items []int) []int {
@@ -93,6 +99,8 @@ func main() {
 }
 
 func computeExcerptList(db *sql.DB) (*ExcerptList, error) {
+	defer logTimeElapsed("  computeExcerptList", time.Now())
+
 	lines, err := selectLines(db)
 	if err != nil {
 		return nil, fmt.Errorf("Error from selectLines: %s", err)

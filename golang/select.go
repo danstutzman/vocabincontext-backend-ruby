@@ -6,14 +6,16 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 )
 
 func selectLines(db *sql.DB) ([]*Line, error) {
+	logTimeElapsed("    selectLines", time.Now())
 	lines := []*Line{}
-	sql := `select line_id, song_source_num, song_id, line
+	query := `select line_id, song_source_num, song_id, line
 	  from lines
   	where song_source_num in (select song_source_num from alignments)`
-	rows, err := db.Query(sql)
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("Error from db.Query: %s", err)
 	}
@@ -38,14 +40,16 @@ func selectLines(db *sql.DB) ([]*Line, error) {
 }
 
 func selectAlignments(sourceNums []int, db *sql.DB) ([]*Alignment, error) {
+	defer logTimeElapsed("    selectAlignments", time.Now())
+
 	alignments := []*Alignment{}
-	sql := fmt.Sprintf(`select song_source_num,
+	query := fmt.Sprintf(`select song_source_num,
       num_line_in_song,
       begin_millis,
 			end_millis
 	  from alignments
   	where song_source_num in (%s)`, intSliceToSqlIn(sourceNums))
-	rows, err := db.Query(sql)
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("Error from db.Query: %s", err)
 	}
@@ -70,11 +74,13 @@ func selectAlignments(sourceNums []int, db *sql.DB) ([]*Alignment, error) {
 }
 
 func selectTranslations(inputs []string, db *sql.DB) []*Translation {
+	defer logTimeElapsed("    selectTranslations", time.Now())
+
 	translations := []*Translation{}
-	sql := fmt.Sprintf(`select part_of_speech_and_spanish_word, english_word
+	query := fmt.Sprintf(`select part_of_speech_and_spanish_word, english_word
 	  from translations
   	where part_of_speech_and_spanish_word in (%s)`, stringSliceToSqlIn(inputs))
-	rows, err := db.Query(sql)
+	rows, err := db.Query(query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -97,8 +103,10 @@ func selectTranslations(inputs []string, db *sql.DB) []*Translation {
 }
 
 func selectSongs(songIds []int, db *sql.DB) ([]*Song, error) {
+	defer logTimeElapsed("    selectSongs", time.Now())
+
 	songs := []*Song{}
-	sql := fmt.Sprintf(`select songs.song_id,
+	query := fmt.Sprintf(`select songs.song_id,
 			songs.song_name,
 			songs.artist_name,
 			videos.youtube_video_id,
@@ -107,7 +115,7 @@ func selectSongs(songIds []int, db *sql.DB) ([]*Song, error) {
 		left join videos on videos.song_source_num = songs.source_num
 		left join api_queries on api_queries.song_source_num = songs.source_num
   	where song_id in (%s)`, intSliceToSqlIn(songIds))
-	rows, err := db.Query(sql)
+	rows, err := db.Query(query)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -133,11 +141,13 @@ func selectSongs(songIds []int, db *sql.DB) ([]*Song, error) {
 }
 
 func selectWordRatings(words []string, db *sql.DB) ([]*WordRating, error) {
+	defer logTimeElapsed("    selectWordRatings", time.Now())
+
 	wordRatings := []*WordRating{}
-	sql := fmt.Sprintf(`select word, rating
+	query := fmt.Sprintf(`select word, rating
 	  from word_ratings
   	where word in (%s)`, stringSliceToSqlIn(words))
-	rows, err := db.Query(sql)
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("Error from db.Query: %s", err)
 	}
@@ -193,8 +203,10 @@ func stringSliceToSqlIn(keys []string) string {
 }
 
 func selectLineWords(lineIds []int, db *sql.DB) ([]*LineWord, error) {
+	defer logTimeElapsed("    selectLineWords", time.Now())
+
 	lineWords := []*LineWord{}
-	sql := fmt.Sprintf(`select line_words.line_id,
+	query := fmt.Sprintf(`select line_words.line_id,
 					word_id,
 					part_of_speech,
 					word_lowercase,
@@ -205,8 +217,7 @@ func selectLineWords(lineIds []int, db *sql.DB) ([]*LineWord, error) {
 				from line_words
 				where line_id in (%s)
 				order by num_word_in_song`, intSliceToSqlIn(lineIds))
-	fmt.Println(sql)
-	rows, err := db.Query(sql)
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("Error from db.Query: %s", err)
 	}
@@ -235,12 +246,13 @@ func selectLineWords(lineIds []int, db *sql.DB) ([]*LineWord, error) {
 }
 
 func selectWords(wordIds []int, db *sql.DB) ([]*Word, error) {
+	defer logTimeElapsed("    selectWords", time.Now())
+
 	words := []*Word{}
-	sql := fmt.Sprintf(`select word_id
+	query := fmt.Sprintf(`select word_id
 				from words
 				where word_id in (%s)`, intSliceToSqlIn(wordIds))
-	fmt.Println(sql)
-	rows, err := db.Query(sql)
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("Error from db.Query: %s", err)
 	}
