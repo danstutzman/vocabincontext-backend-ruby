@@ -1,0 +1,3 @@
+#!/bin/bash -ex
+#$GOPATH/bin/gen
+go run backend.go #line_slice.go lineword_slice.go
