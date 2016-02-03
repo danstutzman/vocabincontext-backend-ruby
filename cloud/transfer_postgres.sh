@@ -13,4 +13,6 @@ EOF
 ssh root@$INSTANCE_IP <<"EOF"
 cd /tmp # eliminate warning
 for TABLE_NAME in `sudo -u postgres psql -t -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"`; do sudo -u postgres psql -c "ANALYZE $TABLE_NAME"; done
+
+curl http://localhost:8080/download-aligned-videos
 EOF

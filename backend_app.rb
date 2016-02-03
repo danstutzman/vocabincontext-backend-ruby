@@ -253,4 +253,12 @@ class BackendApp < Sinatra::Base
     content_type 'image/jpeg'
     File.read("/Users/daniel/dev/search-music-apis/spotify_album_covers/#{params['sha1']}")
   end
+
+  get '/download-aligned-videos' do
+    videos = Video.where 'song_source_num in (select song_source_num from alignments)'
+    videos.each do |video|
+      download_22050_mono_m4a video.youtube_video_id
+    end
+    'OK'
+  end
 end
