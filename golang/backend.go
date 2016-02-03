@@ -135,7 +135,11 @@ func main() {
 	}
 
 	http.HandleFunc("/api", func(writer http.ResponseWriter, request *http.Request) {
-		excerptList := computeExcerptList(db)
+		excerptList, err := computeExcerptList(db)
+		if err != nil {
+			log.Fatal(fmt.Errorf("Error from computeExcerptList: %s", err))
+		}
+
 		json.NewEncoder(writer).Encode(excerptList)
 	})
 
@@ -143,10 +147,10 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
-func computeExcerptList(db *sql.DB) ExcerptList {
+func computeExcerptList(db *sql.DB) (*ExcerptList, error) {
 	lines, err := selectLines(db)
 	if err != nil {
-		log.Fatal(fmt.Errorf("Error from selectLines: %s", err))
+		return nil, fmt.Errorf("Error from selectLines: %s", err)
 	}
 
 	lineByLineId := map[int]*Line{}
@@ -161,7 +165,7 @@ func computeExcerptList(db *sql.DB) ExcerptList {
 
 	lineWords, err := selectLineWords(lineIds, db)
 	if err != nil {
-		log.Fatal(fmt.Errorf("Error from selectLineWords: %s", err))
+		return nil, fmt.Errorf("Error from selectLineWords: %s", err)
 	}
 
 	for _, lineWord := range lineWords {
@@ -177,7 +181,7 @@ func computeExcerptList(db *sql.DB) ExcerptList {
 
 	alignments, err := selectAlignments(sourceNums, db)
 	if err != nil {
-		log.Fatal(fmt.Errorf("Error from selectAlignments: %s", err))
+		return nil, fmt.Errorf("Error from selectAlignments: %s", err)
 	}
 
 	type SourceNumAndLineNum struct {
@@ -206,7 +210,7 @@ func computeExcerptList(db *sql.DB) ExcerptList {
 
 	translations := selectTranslations(translationInputs, db)
 	if err != nil {
-		log.Fatal(fmt.Errorf("Error from selectTranslations: %s", err))
+		return nil, fmt.Errorf("Error from selectTranslations: %s", err)
 	}
 
 	translationByInput := map[string]*Translation{}
@@ -230,7 +234,7 @@ func computeExcerptList(db *sql.DB) ExcerptList {
 
 	songs, err := selectSongs(songIds, db)
 	if err != nil {
-		log.Fatal(fmt.Errorf("Error from selectSongs: %s", err))
+		return nil, fmt.Errorf("Error from selectSongs: %s", err)
 	}
 
 	songBySongId := map[int]*Song{}
@@ -249,7 +253,7 @@ func computeExcerptList(db *sql.DB) ExcerptList {
 	}
 	words, err := selectWords(wordIds, db)
 	if err != nil {
-		log.Fatal(fmt.Errorf("Error from selectWords: %s", err))
+		return nil, fmt.Errorf("Error from selectWords: %s", err)
 	}
 
 	wordByWordId := map[int]*Word{}
@@ -265,7 +269,7 @@ func computeExcerptList(db *sql.DB) ExcerptList {
 
 	wordRatings, err := selectWordRatings(wordWords, db)
 	if err != nil {
-		log.Fatal(fmt.Errorf("Error from selectWordRatings: %s", err))
+		return nil, fmt.Errorf("Error from selectWordRatings: %s", err)
 	}
 
 	wordRatingByWord := map[string]*WordRating{}
@@ -369,5 +373,6 @@ func computeExcerptList(db *sql.DB) ExcerptList {
 		excerpt.LineId = line.line_id
 		excerpts = append(excerpts, excerpt)
 	}
-	return ExcerptList{Lines: excerpts}
+
+	return &ExcerptList{Lines: excerpts}, nil
 }
