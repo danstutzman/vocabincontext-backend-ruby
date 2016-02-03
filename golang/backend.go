@@ -329,7 +329,9 @@ func computeExcerptList(query string, db *sql.DB) (*ExcerptList, error) {
 	}
 	lines = filteredLines
 
-	lines = lines[0:20]
+	if len(lines) > 20 {
+		lines = lines[0:20]
+	}
 
 	excerpts := []Excerpt{}
 	for _, line := range lines {
