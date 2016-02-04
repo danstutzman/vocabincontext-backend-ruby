@@ -165,6 +165,13 @@ func main() {
 		wordRatingByWord[wordRating.word] = wordRating
 	}
 
+	// Precompute response for empty query
+	excerptListForEmptyQuery, err := computeExcerptList(
+		"", translationByInput, wordRatingByWord, db)
+	if err != nil {
+		log.Fatal(fmt.Errorf("Error from computeExcerptList: %s", err))
+	}
+
 	setCorsHeaders := func(writer http.ResponseWriter) {
 		writer.Header().Set("Access-Control-Allow-Origin", "*")
 		writer.Header().Set("Access-Control-Allow-Methods",
@@ -178,10 +185,16 @@ func main() {
 		func(writer http.ResponseWriter, request *http.Request) {
 			query := request.FormValue("q")
 
-			excerptList, err := computeExcerptList(
-				query, translationByInput, wordRatingByWord, db)
-			if err != nil {
-				log.Fatal(fmt.Errorf("Error from computeExcerptList: %s", err))
+			var excerptList *ExcerptList
+			var err error
+			if query == "" {
+				excerptList = excerptListForEmptyQuery
+			} else {
+				excerptList, err = computeExcerptList(
+					query, translationByInput, wordRatingByWord, db)
+				if err != nil {
+					log.Fatal(fmt.Errorf("Error from computeExcerptList: %s", err))
+				}
 			}
 
 			setCorsHeaders(writer)
