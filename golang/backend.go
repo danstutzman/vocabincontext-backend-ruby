@@ -6,16 +6,22 @@ import (
 	"flag"
 	"fmt"
 	_ "github.com/lib/pq"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const LEFT_DOUBLE_QUOTE = "\u201c"
 const RIGHT_DOUBLE_QUOTE = "\u201d"
+
+var YOUTUBE_VIDEO_ID_REGEX = regexp.MustCompile("^[a-zA-Z0-9_-]{11}$")
 
 var _, _ = fmt.Println()
 
@@ -132,35 +138,112 @@ func main() {
 		log.Fatal(fmt.Errorf("Error from sql.Open: %s", err))
 	}
 
+	// Test out the database connection immediately to check the credentials
 	ignored := 0
 	err = db.QueryRow("SELECT 1").Scan(&ignored)
 	if err != nil {
 		log.Fatal(fmt.Errorf("Error from db.QueryRow: %s", err))
 	}
 
-	http.HandleFunc("/api", func(writer http.ResponseWriter, request *http.Request) {
+	// Preload all translations into memory instead of slow IN query
+	translations := selectAllTranslations(db)
+	translationByInput := map[string]*Translation{}
+	for _, translation := range translations {
+		translationByInput[translation.part_of_speech_and_spanish_word] = translation
+	}
+
+	setCorsHeaders := func(writer http.ResponseWriter) {
 		writer.Header().Set("Access-Control-Allow-Origin", "*")
 		writer.Header().Set("Access-Control-Allow-Methods",
 			"POST, GET, OPTIONS, PUT, DELETE")
 		writer.Header().Set("Access-Control-Allow-Headers",
 			"Accept, Content-Type, Content-Length, Accept-Encoding, "+
 				"X-CSRF-Token, Authorization")
+	}
 
-		query := request.FormValue("q")
+	http.HandleFunc("/api/excerpt_list.json",
+		func(writer http.ResponseWriter, request *http.Request) {
+			query := request.FormValue("q")
 
-		excerptList, err := computeExcerptList(query, db)
-		if err != nil {
-			log.Fatal(fmt.Errorf("Error from computeExcerptList: %s", err))
-		}
+			excerptList, err := computeExcerptList(query, translationByInput, db)
+			if err != nil {
+				log.Fatal(fmt.Errorf("Error from computeExcerptList: %s", err))
+			}
 
-		json.NewEncoder(writer).Encode(excerptList)
-	})
+			setCorsHeaders(writer)
+			json.NewEncoder(writer).Encode(excerptList)
+		})
+
+	http.HandleFunc("/api/excerpt.aac",
+		func(writer http.ResponseWriter, request *http.Request) {
+			youtubeVideoId := request.FormValue("video_id")
+			if !YOUTUBE_VIDEO_ID_REGEX.MatchString(youtubeVideoId) {
+				log.Fatal(fmt.Errorf("Non-whitelisted characters in youtubeVideoId '%s': %s",
+					request.FormValue("video_id"), err))
+			}
+			youtubeVideoIdSafe := youtubeVideoId
+			beginMillis, err := strconv.Atoi(request.FormValue("begin_millis"))
+			if err != nil {
+				log.Fatal(fmt.Errorf("Error from strconv.Atoi of begin_millis='%s': %s",
+					request.FormValue("begin_millis"), err))
+			}
+			endMillis, err := strconv.Atoi(request.FormValue("end_millis"))
+			if err != nil {
+				log.Fatal(fmt.Errorf("Error from strconv.Atoi of end_millis='%s': %s",
+					request.FormValue("end_millis"), err))
+			}
+
+			excerptPath := fmt.Sprintf("/tmp/youtube_22050_mono/excerpt-%d-%d.aac",
+				beginMillis, endMillis)
+			_22050MonoM4aPath := fmt.Sprintf("/tmp/youtube_22050_mono/%s.m4a",
+				youtubeVideoIdSafe)
+			os.MkdirAll("/tmp/youtube_22050_mono", 0700)
+
+			var avconvBin string
+			if _, err := os.Stat("/usr/local/bin/ffmpeg"); !os.IsNotExist(err) {
+				avconvBin = "/usr/local/bin/ffmpeg"
+			} else if _, err := os.Stat("/usr/local/bin/avconv"); !os.IsNotExist(err) {
+				avconvBin = "/usr/local/bin/avconv"
+			} else {
+				log.Fatal(fmt.Errorf("Can't find avconv binary"))
+			}
+
+			beginTime := float32(beginMillis) / 1000.0
+			durationTime := float32(endMillis)/1000.0 - beginTime
+			commandArgs := []string{
+				"-i", _22050MonoM4aPath,
+				"-acodec", "copy",
+				"-ss", fmt.Sprintf("%f", beginTime),
+				"-t", fmt.Sprintf("%f", durationTime),
+				"-y", excerptPath,
+			}
+			_, err = exec.Command(avconvBin, commandArgs...).Output()
+			if err != nil {
+				log.Fatal(fmt.Errorf("Error from executing %s %s: %s",
+					avconvBin, strings.Join(commandArgs, " "), err))
+			}
+
+			aacBytes, err := ioutil.ReadFile(excerptPath)
+			if err != nil {
+				log.Fatal(fmt.Errorf("Error from ReadFile of %s: %s", excerptPath, err))
+			}
+			err = os.Remove(excerptPath)
+			if err != nil {
+				log.Fatal(fmt.Errorf("Error from os.Remove of %s: %s", excerptPath, err))
+			}
+
+			setCorsHeaders(writer)
+			writer.Header().Set("Content-Type", "audio/aac")
+			writer.Write(aacBytes)
+		})
 
 	log.Println("Listening on :8080...")
 	http.ListenAndServe(":8080", nil)
 }
 
-func computeExcerptList(query string, db *sql.DB) (*ExcerptList, error) {
+func computeExcerptList(query string, translationByInput map[string]*Translation,
+	db *sql.DB) (*ExcerptList, error) {
+
 	defer logTimeElapsed("  computeExcerptList", time.Now())
 
 	var possibleLineIdsFilter []int
@@ -225,23 +308,6 @@ func computeExcerptList(query string, db *sql.DB) (*ExcerptList, error) {
 			line.alignment = alignment
 		}
 	}
-
-	translationInputs := []string{}
-	for _, lineWord := range lineWords {
-		translationInputs = append(translationInputs,
-			lineWord.part_of_speech+"-"+lineWord.word_lowercase)
-	}
-
-	translations := selectTranslations(translationInputs, db)
-	if err != nil {
-		return nil, fmt.Errorf("Error from selectTranslations: %s", err)
-	}
-
-	translationByInput := map[string]*Translation{}
-	for _, translation := range translations {
-		translationByInput[translation.part_of_speech_and_spanish_word] = translation
-	}
-	//fmt.Println(translationByInput)
 
 	for _, line := range lines {
 		for _, lineWord := range line.line_words {

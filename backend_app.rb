@@ -154,69 +154,6 @@ class BackendApp < Sinatra::Base
     'OK'
   end
 
-  get '/excerpt.wav' do
-    youtube_video_id = params[:video_id]
-    begin_millis  = Integer(params[:begin_millis])
-    end_millis    = Integer(params[:end_millis])
-    begin_time    = begin_millis / 1000.0
-    begin_fade    = [begin_time - 0.5, 0].max
-    duration_time = (end_millis / 1000.0) - begin_fade + 0.5
-    full_path = download_wav youtube_video_id
-    excerpt_path = "/tmp/youtube/excerpt-#{begin_millis}-#{end_millis}.wav"
-    command = ["/usr/local/bin/sox", full_path, excerpt_path,
-      'trim', begin_fade.to_s, duration_time.to_s,
-      'fade', 't', (begin_time - begin_fade).to_s, '0', '0.5',
-    ]
-    puts command.join(' ')
-    stdout, stderr, status = Open3.capture3(*command)
-    raise "Command #{command} had stderr #{stderr}" if !File.exists? excerpt_path
-    data = File.read excerpt_path
-    File.delete excerpt_path
-    content_type 'audio/wav'
-    response.write data
-  end
-
-  get '/excerpt.aac' do
-    youtube_video_id = params[:video_id]
-    begin_millis  = Integer(params[:begin_millis])
-    end_millis    = Integer(params[:end_millis])
-    begin_time    = begin_millis / 1000.0
-    duration_time = (end_millis / 1000.0) - begin_time
-    _22050_mono_m4a_path = download_22050_mono_m4a youtube_video_id
-
-    excerpt_path = "/tmp/youtube_22050_mono/excerpt-#{begin_millis}-#{end_millis}.aac"
-    FileUtils.mkdir_p '/tmp/youtube_22050_mono'
-    command = [
-      AVCONV, '-i', _22050_mono_m4a_path, '-acodec', 'copy',
-      '-ss', begin_time.to_s, '-t', duration_time.to_s,
-      '-y', excerpt_path
-    ]
-    puts command.join(' ')
-    stdout, stderr, status = Open3.capture3(*command)
-
-    data = File.read excerpt_path
-    File.delete excerpt_path
-    content_type 'audio/aac'
-    response.write data
-  end
-
-  get '/excerpt-:begin_millis-:end_millis.mp3' do
-    begin_millis  = Integer(params[:begin_millis])
-    end_millis    = Integer(params[:end_millis])
-    begin_time    = begin_millis / 1000.0
-    duration_time = (end_millis - begin_millis) / 1000.0
-    filename = "excerpt-#{begin_millis}-#{end_millis}.wav"
-    puts "/usr/local/bin/sox /Users/daniel/dev/detect-beats/y8rBC6GCUjg.wav #{filename} trim #{begin_time} #{duration_time}"
-    `/usr/local/bin/sox /Users/daniel/dev/detect-beats/y8rBC6GCUjg.wav #{filename} trim #{begin_time} #{duration_time}`
-    filename_mp3 = filename.gsub(/\.wav$/, '.mp3')
-    `/usr/local/bin/lame #{filename} #{filename_mp3}`
-    data = File.read filename_mp3
-    File.delete filename
-    File.delete filename_mp3
-    content_type 'audio/mp3'
-    response.write data
-  end
-
   get '/align-syllables' do
     @syllables = Syllable.all.order(:begin_ms).to_a
     @song = Song.first #find_by_youtube_video_id(params[:video_id])

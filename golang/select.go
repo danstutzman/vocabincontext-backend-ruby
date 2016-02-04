@@ -115,13 +115,12 @@ func selectAlignments(sourceNums []int, db *sql.DB) ([]*Alignment, error) {
 	return alignments, nil
 }
 
-func selectTranslations(inputs []string, db *sql.DB) []*Translation {
-	defer logTimeElapsed("    selectTranslations", time.Now())
+func selectAllTranslations(db *sql.DB) []*Translation {
+	defer logTimeElapsed("    selectAllTranslations", time.Now())
 
 	translations := []*Translation{}
 	query := fmt.Sprintf(`select part_of_speech_and_spanish_word, english_word
-	  from translations
-  	where part_of_speech_and_spanish_word in (%s)`, stringSliceToSqlIn(inputs))
+	  from translations`)
 	rows, err := db.Query(query)
 	if err != nil {
 		log.Fatal(err)
