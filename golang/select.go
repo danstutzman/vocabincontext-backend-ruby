@@ -115,7 +115,7 @@ func selectAlignments(sourceNums []int, db *sql.DB) ([]*Alignment, error) {
 	return alignments, nil
 }
 
-func selectAllTranslations(db *sql.DB) []*Translation {
+func selectAllTranslations(db *sql.DB) ([]*Translation, error) {
 	defer logTimeElapsed("    selectAllTranslations", time.Now())
 
 	translations := []*Translation{}
@@ -123,7 +123,7 @@ func selectAllTranslations(db *sql.DB) []*Translation {
 	  from translations`)
 	rows, err := db.Query(query)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Error from db.Query: %s", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -132,15 +132,15 @@ func selectAllTranslations(db *sql.DB) []*Translation {
 			&translation.part_of_speech_and_spanish_word,
 			&translation.english_word)
 		if err != nil {
-			log.Fatal(err)
+			return nil, fmt.Errorf("Error from rows.Scan: %s", err)
 		}
 		translations = append(translations, &translation)
 	}
 	err = rows.Err()
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Error from rows.Err: %s", err)
 	}
-	return translations
+	return translations, nil
 }
 
 func selectSongs(songIds []int, db *sql.DB) ([]*Song, error) {

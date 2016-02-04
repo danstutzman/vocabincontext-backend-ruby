@@ -146,7 +146,10 @@ func main() {
 	}
 
 	// Preload all translations into memory instead of slow IN query
-	translations := selectAllTranslations(db)
+	translations, err := selectAllTranslations(db)
+	if err != nil {
+		log.Fatal(fmt.Errorf("Error from selectAllTranslations: %s", err))
+	}
 	translationByInput := map[string]*Translation{}
 	for _, translation := range translations {
 		translationByInput[translation.part_of_speech_and_spanish_word] = translation
