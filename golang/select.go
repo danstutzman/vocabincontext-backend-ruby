@@ -181,13 +181,12 @@ func selectSongs(songIds []int, db *sql.DB) ([]*Song, error) {
 	return songs, nil
 }
 
-func selectWordRatings(words []string, db *sql.DB) ([]*WordRating, error) {
+func selectWordRatings(db *sql.DB) ([]*WordRating, error) {
 	defer logTimeElapsed("    selectWordRatings", time.Now())
 
 	wordRatings := []*WordRating{}
 	query := fmt.Sprintf(`select word, rating
-	  from word_ratings
-  	where word in (%s)`, stringSliceToSqlIn(words))
+	  from word_ratings`)
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("Error from db.Query: %s", err)
@@ -284,32 +283,4 @@ func selectLineWords(lineIds []int, db *sql.DB) ([]*LineWord, error) {
 		return nil, fmt.Errorf("Error from rows.Err: %s", err)
 	}
 	return lineWords, nil
-}
-
-func selectWords(wordIds []int, db *sql.DB) ([]*Word, error) {
-	defer logTimeElapsed("    selectWords", time.Now())
-
-	words := []*Word{}
-	query := fmt.Sprintf(`select word_id
-				from words
-				where word_id in (%s)`, intSliceToSqlIn(wordIds))
-	rows, err := db.Query(query)
-	if err != nil {
-		return nil, fmt.Errorf("Error from db.Query: %s", err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var word Word
-		err := rows.Scan(
-			&word.word_id)
-		if err != nil {
-			return nil, fmt.Errorf("Error from rows.Scan: %s", err)
-		}
-		words = append(words, &word)
-	}
-	err = rows.Err()
-	if err != nil {
-		return nil, fmt.Errorf("Error from rows.Err: %s", err)
-	}
-	return words, nil
 }

@@ -152,6 +152,16 @@ func main() {
 		translationByInput[translation.part_of_speech_and_spanish_word] = translation
 	}
 
+	// Preload word ratings too
+	wordRatings, err := selectWordRatings(db)
+	if err != nil {
+		log.Fatal(fmt.Errorf("Error from selectWordRatings: %s", err))
+	}
+	wordRatingByWord := map[string]*WordRating{}
+	for _, wordRating := range wordRatings {
+		wordRatingByWord[wordRating.word] = wordRating
+	}
+
 	setCorsHeaders := func(writer http.ResponseWriter) {
 		writer.Header().Set("Access-Control-Allow-Origin", "*")
 		writer.Header().Set("Access-Control-Allow-Methods",
@@ -165,7 +175,8 @@ func main() {
 		func(writer http.ResponseWriter, request *http.Request) {
 			query := request.FormValue("q")
 
-			excerptList, err := computeExcerptList(query, translationByInput, db)
+			excerptList, err := computeExcerptList(
+				query, translationByInput, wordRatingByWord, db)
 			if err != nil {
 				log.Fatal(fmt.Errorf("Error from computeExcerptList: %s", err))
 			}
@@ -242,7 +253,7 @@ func main() {
 }
 
 func computeExcerptList(query string, translationByInput map[string]*Translation,
-	db *sql.DB) (*ExcerptList, error) {
+	wordRatingByWord map[string]*WordRating, db *sql.DB) (*ExcerptList, error) {
 
 	defer logTimeElapsed("  computeExcerptList", time.Now())
 
@@ -335,37 +346,6 @@ func computeExcerptList(query string, translationByInput map[string]*Translation
 		line.song = songBySongId[line.song_id]
 	}
 
-	wordIds := []int{}
-	for _, line := range lines {
-		for _, lineWord := range line.line_words {
-			wordIds = append(wordIds, lineWord.word_id)
-		}
-	}
-	words, err := selectWords(wordIds, db)
-	if err != nil {
-		return nil, fmt.Errorf("Error from selectWords: %s", err)
-	}
-
-	wordByWordId := map[int]*Word{}
-	for _, word := range words {
-		wordByWordId[word.word_id] = word
-	}
-
-	wordWords := []string{}
-	for _, word := range words {
-		wordWords = append(wordWords, word.word)
-	}
-	wordWords = uniqStrings(wordWords)
-
-	wordRatings, err := selectWordRatings(wordWords, db)
-	if err != nil {
-		return nil, fmt.Errorf("Error from selectWordRatings: %s", err)
-	}
-
-	wordRatingByWord := map[string]*WordRating{}
-	for _, wordRating := range wordRatings {
-		wordRatingByWord[wordRating.word] = wordRating
-	}
 	for _, line := range lines {
 		for _, lineWord := range line.line_words {
 			lineWord.word_rating = wordRatingByWord[lineWord.word_lowercase]
