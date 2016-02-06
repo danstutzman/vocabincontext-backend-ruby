@@ -3,3 +3,5 @@
 /.bundle/config
 /vendor/bundle
 /cloud/vocabincontext-media-excerpts-uploader.csv
+/cloud/tls/conf
+/cloud/tls/logs
