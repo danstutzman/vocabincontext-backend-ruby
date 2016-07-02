@@ -12,6 +12,14 @@ sudo ufw allow http
 sudo ufw allow 60001:60010/udp
 yes | sudo ufw enable
 sudo apt-get install -y mosh
+
+if [ ! -e /etc/ssh/sshd_config.bak ]; then
+  sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+fi
+cat /etc/ssh/sshd_config.bak | sed "s/Port 22$/Port 2222/" | sudo tee /etc/ssh/sshd_config
+sudo ufw allow 2222
+sudo service ssh restart
+sudo ufw deny ssh
 EOF
 
 tugboat ssh vocabincontext <<EOF

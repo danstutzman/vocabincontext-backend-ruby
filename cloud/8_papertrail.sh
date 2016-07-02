@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 
-tugboat ssh vocabincontext <<"EOF"
+tugboat ssh -p 2222 vocabincontext <<"EOF"
 
 set -ex
 
