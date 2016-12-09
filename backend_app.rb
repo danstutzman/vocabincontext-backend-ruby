@@ -154,6 +154,52 @@ class BackendApp < Sinatra::Base
     'OK'
   end
 
+  get '/excerpt.wav' do
+    youtube_video_id = params[:video_id]
+    begin_millis  = Integer(params[:begin_millis])
+    end_millis    = Integer(params[:end_millis])
+    begin_time    = begin_millis / 1000.0
+    begin_fade    = [begin_time - 0.5, 0].max
+    duration_time = (end_millis / 1000.0) - begin_fade + 0.5
+    full_path = download_wav youtube_video_id
+    excerpt_path = "/tmp/youtube/excerpt-#{begin_millis}-#{end_millis}.wav"
+    command = ["/usr/local/bin/sox", full_path, excerpt_path,
+      'trim', begin_fade.to_s, duration_time.to_s,
+      'fade', 't', (begin_time - begin_fade).to_s, '0', '0.5',
+    ]
+    puts command.join(' ')
+    stdout, stderr, status = Open3.capture3(*command)
+    raise "Command #{command} had stderr #{stderr}" if !File.exists? excerpt_path
+    data = File.read excerpt_path
+    File.delete excerpt_path
+    content_type 'audio/wav'
+    response.write data
+  end
+
+  get '/excerpt.aac' do
+    youtube_video_id = params[:video_id]
+    begin_millis  = Integer(params[:begin_millis])
+    end_millis    = Integer(params[:end_millis])
+    begin_time    = begin_millis / 1000.0
+    duration_time = (end_millis / 1000.0) - begin_time
+    _22050_mono_m4a_path = download_22050_mono_m4a youtube_video_id
+
+    excerpt_path = "/tmp/youtube_22050_mono/excerpt-#{begin_millis}-#{end_millis}.aac"
+    FileUtils.mkdir_p '/tmp/youtube_22050_mono'
+    command = [
+      AVCONV, '-i', _22050_mono_m4a_path, '-acodec', 'copy',
+      '-ss', begin_time.to_s, '-t', duration_time.to_s,
+      '-y', excerpt_path
+    ]
+    puts command.join(' ')
+    stdout, stderr, status = Open3.capture3(*command)
+
+    data = File.read excerpt_path
+    File.delete excerpt_path
+    content_type 'audio/aac'
+    response.write data
+  end
+
   get '/align-syllables' do
     @syllables = Syllable.all.order(:begin_ms).to_a
     @song = Song.first #find_by_youtube_video_id(params[:video_id])
@@ -198,4 +244,47 @@ class BackendApp < Sinatra::Base
     end
     'OK'
   end
+
+  get '/' do
+    haml :enter_query
+  end
+
+  get '/results' do
+    query = params['q']
+    if query == ''
+      @word_id = nil
+      line_words = LineWord.joins(:line
+        ).where('lines.audio_excerpt_filename is not null')
+    else
+      @word_id = Word.find_by_word(query).word_id
+      line_words = LineWord.joins(:line).where(word_id: @word_id)
+    end
+    @lines = Line.where('line_id IN (?)', line_words.map { |lw| lw.line_id }.uniq)
+    @lines = @lines.includes(:line_words)
+    load_alignment_for_lines @lines
+    line_by_line_id = {}
+    @lines.each do |line|
+      line_by_line_id[line.line_id] = line
+    end
+    line_words.each do |line_word|
+      line_by_line_id[line_word.line_id].num_repetitions_of_search_word ||= 0
+      line_by_line_id[line_word.line_id].num_repetitions_of_search_word += 1
+    end
+
+    songs = Song.where('song_id IN (?)', @lines.map { |line| line.song_id }.uniq)
+    songs = songs.includes(:video).includes(:api_query)
+    song_by_song_id = {}
+    songs.each { |song| song_by_song_id[song.song_id] = song }
+    @lines.each { |line| line.song = song_by_song_id[line.song_id] }
+
+    @lines = @lines.sort_by do |line|
+      [
+        line.alignment ? 1 : 2,
+        -line.num_repetitions_of_search_word / line.line_words.size.to_f,
+      ]
+    end
+
+    haml :results
+  end
+
 end
