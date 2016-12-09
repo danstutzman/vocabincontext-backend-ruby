@@ -32,6 +32,7 @@ end
 
 class Alignment < ActiveRecord::Base
   self.primary_key = 'alignment_id'
+  attr :youtube_video_id, true
 end
 
 class Syllable < ActiveRecord::Base

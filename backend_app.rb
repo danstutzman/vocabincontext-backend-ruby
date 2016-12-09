@@ -156,9 +156,6 @@ class BackendApp < Sinatra::Base
         if new_data['text_if_good']
           alignment.text_if_good = new_data['text_if_good']
         end
-        if new_data['youtube_video_id_if_good']
-          alignment.youtube_video_id_if_good = new_data['youtube_video_id_if_good']
-        end
         alignment.save!
       else
         alignment.destroy
@@ -302,6 +299,20 @@ class BackendApp < Sinatra::Base
 
   get '/good-alignments' do
     @alignments = Alignment.where('text_if_good is not null')
+
+    source_nums = {}
+    @alignments.each do |alignment|
+      source_nums[alignment.song_source_num] = true
+    end
+    source_num_to_youtube_video_id = {}
+    Video.where('song_source_num in (?)', source_nums.keys).each do |video|
+      source_num_to_youtube_video_id[video.song_source_num] = video.youtube_video_id
+    end
+    @alignments.each do |alignment|
+      alignment.youtube_video_id =
+        source_num_to_youtube_video_id[alignment.song_source_num]
+    end
+
     haml :good_alignments
   end
 
