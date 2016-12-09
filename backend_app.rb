@@ -153,6 +153,12 @@ class BackendApp < Sinatra::Base
       if new_data && new_data['begin_millis'] && new_data['end_millis']
         alignment.begin_millis = new_data['begin_millis']
         alignment.end_millis   = new_data['end_millis']
+        if new_data['text_if_good']
+          alignment.text_if_good = new_data['text_if_good']
+        end
+        if new_data['youtube_video_id_if_good']
+          alignment.youtube_video_id_if_good = new_data['youtube_video_id_if_good']
+        end
         alignment.save!
       else
         alignment.destroy
@@ -292,6 +298,11 @@ class BackendApp < Sinatra::Base
     end
 
     haml :results
+  end
+
+  get '/good-alignments' do
+    @alignments = Alignment.where('text_if_good is not null')
+    haml :good_alignments
   end
 
 end

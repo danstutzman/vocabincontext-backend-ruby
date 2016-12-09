@@ -10,15 +10,14 @@
     %tr
       %td
         %button{onclick: "play_excerpt(#{line_num})"} Play
+      %td
+        %input{type:'checkbox', name:"good#{line_num}", onclick: "set_good(#{line_num},#{line.line.to_json}, #{@song.video.youtube_video_id.to_json})", checked: line.alignment && line.alignment.text_if_good }
       %td{id: "current#{line_num}"}
       %td{id: "begin#{line_num}"}= line.alignment && line.alignment.begin_millis / 1000.0
       %td
         %div{onclick: "currentLineNum = #{line_num}; highlightCurrentLineNum();"}
           = line.line
       %td{id: "end#{line_num}"}= line.alignment && line.alignment.end_millis / 1000.0
-      -#%td
-      -#  %audio(controls preload="none")
-      -#    %source(src="/excerpt.wav?begin_millis=#{@song.lines[line_num - 1].end_millis}&end_millis=#{line.end_millis}")
 
 :javascript
   var num_lines = #{@song.lines.size};
@@ -141,4 +140,9 @@
       "&end_millis=" + alignments[lineNum].end_millis;
     playingAudio = new Audio(path);
     playingAudio.play();
+  }
+
+  function set_good(lineNum, text_if_good, youtube_video_id_if_good) {
+    alignments[lineNum].text_if_good = text_if_good
+    alignments[lineNum].youtube_video_id_if_good = youtube_video_id_if_good
   }
