@@ -42,7 +42,7 @@ def download_22050_mono_m4a video_id
     FileUtils.mkdir_p '/tmp/youtube_44100_stereo'
     command = [
       { 'PATH' => YOUTUBE_DL_ENV_PATH },
-      'python', YOUTUBE_DL,
+      '/usr/bin/python', YOUTUBE_DL,
       "http://www.youtube.com/watch?v=#{video_id}",
       '--extract-audio', '--audio-format', 'm4a',
       '-o', path1
