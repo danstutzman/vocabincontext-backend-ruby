@@ -1,27 +1,7 @@
 #!/bin/bash -ex
 cd `dirname $0`
 
-tugboat ssh vocabincontext <<EOF
-set -ex
-# See https://www.digitalocean.com/community/tutorials/how-to-set-up-a-firewall-with-ufw-on-ubuntu-14-04
-sudo apt-get install -y ufw
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw allow ssh
-sudo ufw allow http
-sudo ufw allow 60001:60010/udp
-yes | sudo ufw enable
-sudo apt-get install -y mosh
-
-if [ ! -e /etc/ssh/sshd_config.bak ]; then
-  sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
-fi
-cat /etc/ssh/sshd_config.bak | sed "s/Port 22$/Port 2222/" | sudo tee /etc/ssh/sshd_config
-sudo ufw allow 2222
-sudo service ssh restart
-sudo ufw deny ssh
-EOF
-
+fwknop -s -n vocabincontext.danstutzman.com
 tugboat ssh vocabincontext <<EOF
 set -ex
 sudo apt-get update
@@ -33,9 +13,7 @@ id -u web &>/dev/null || useradd web
 sudo mkdir -p /var/www/vocabincontext
 EOF
 
-INSTANCE_IP=`tugboat droplets | grep vocabincontext | egrep -oh "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+" || true`
-echo INSTANCE_IP=$INSTANCE_IP
-rsync -e "ssh -l web -o StrictHostKeyChecking=no" -rv .. root@$INSTANCE_IP:/var/www/vocabincontext --exclude vendor --exclude ".*"
+rsync -e "ssh -l web" -rv .. root@vocabincontext.danstutzman.com:/var/www/vocabincontext --exclude vendor --exclude ".*"
 
 tugboat ssh vocabincontext <<EOF
 set -ex

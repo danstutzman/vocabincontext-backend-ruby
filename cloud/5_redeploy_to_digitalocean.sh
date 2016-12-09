@@ -1,11 +1,10 @@
 #!/bin/bash -ex
 cd `dirname $0`
 
-INSTANCE_IP=`tugboat droplets | grep vocabincontext | egrep -oh "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+"`
-echo INSTANCE_IP=$INSTANCE_IP
-rsync -e "ssh -l web" -rv .. root@$INSTANCE_IP:/var/www/vocabincontext --exclude vendor --exclude ".*" --exclude "*.wav"
+fwknop -s -n vocabincontext.danstutzman.com
+rsync -e "ssh -l web" -rv .. root@vocabincontext.danstutzman.com:/var/www/vocabincontext --exclude vendor --exclude ".*" --exclude "*.wav"
 
-tugboat ssh -p 2222 vocabincontext <<EOF
+tugboat ssh vocabincontext <<EOF
 chown -R web:web /var/www/vocabincontext
 
 cd /var/www/vocabincontext/golang

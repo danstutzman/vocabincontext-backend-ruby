@@ -1,0 +1,1 @@
+/Users/daniel/dev/sysadmin/4_setup_unattended_upgrades.sh

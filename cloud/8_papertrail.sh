@@ -1,6 +1,7 @@
 #!/bin/bash -ex
 
-tugboat ssh -p 2222 vocabincontext <<"EOF"
+fwknop -s -n vocabincontext.danstutzman.com
+tugboat ssh vocabincontext <<"EOF"
 
 set -ex
 
