@@ -7,4 +7,6 @@
     %tr
       %td(nowrap='nowrap')
         %button{onclick: "audio = new Audio('/excerpt.wav?video_id=#{alignment.youtube_video_id}&begin_millis=#{alignment.begin_millis}&end_millis=#{alignment.end_millis}'); audio.play(); event.preventDefault();"} Play
+      %td(align='right')
+        = (alignment.end_millis - alignment.begin_millis) / 1000
       %td= alignment.text_if_good
