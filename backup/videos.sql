@@ -16,12 +16,17 @@ SET row_security = off;
 
 SET search_path = public, pg_catalog;
 
+DROP INDEX public.idx_videos_youtube_video_id;
+DROP INDEX public.idx_videos_song_source_num;
+DROP TABLE public.videos;
+SET search_path = public, pg_catalog;
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;
 
 --
--- Name: videos; Type: TABLE; Schema: public; Owner: dan
+-- Name: videos; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE videos (
@@ -30,10 +35,8 @@ CREATE TABLE videos (
 );
 
 
-ALTER TABLE videos OWNER TO dan;
-
 --
--- Data for Name: videos; Type: TABLE DATA; Schema: public; Owner: dan
+-- Data for Name: videos; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY videos (youtube_video_id, song_source_num) FROM stdin;
@@ -71,14 +74,14 @@ VEOMmAFW1DM	2090650
 
 
 --
--- Name: idx_videos_song_source_num; Type: INDEX; Schema: public; Owner: dan
+-- Name: idx_videos_song_source_num; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_videos_song_source_num ON videos USING btree (song_source_num);
 
 
 --
--- Name: idx_videos_youtube_video_id; Type: INDEX; Schema: public; Owner: dan
+-- Name: idx_videos_youtube_video_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_videos_youtube_video_id ON videos USING btree (youtube_video_id);

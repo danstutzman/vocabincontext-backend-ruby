@@ -16,12 +16,18 @@ SET row_security = off;
 
 SET search_path = public, pg_catalog;
 
+DROP INDEX public.idx_alignments_song_source_num_num_line_in_song;
+ALTER TABLE public.alignments ALTER COLUMN alignment_id DROP DEFAULT;
+DROP SEQUENCE public.alignments_alignment_id_seq;
+DROP TABLE public.alignments;
+SET search_path = public, pg_catalog;
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;
 
 --
--- Name: alignments; Type: TABLE; Schema: public; Owner: dan
+-- Name: alignments; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE alignments (
@@ -34,10 +40,8 @@ CREATE TABLE alignments (
 );
 
 
-ALTER TABLE alignments OWNER TO dan;
-
 --
--- Name: alignments_alignment_id_seq; Type: SEQUENCE; Schema: public; Owner: dan
+-- Name: alignments_alignment_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE alignments_alignment_id_seq
@@ -48,24 +52,22 @@ CREATE SEQUENCE alignments_alignment_id_seq
     CACHE 1;
 
 
-ALTER TABLE alignments_alignment_id_seq OWNER TO dan;
-
 --
--- Name: alignments_alignment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: dan
+-- Name: alignments_alignment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE alignments_alignment_id_seq OWNED BY alignments.alignment_id;
 
 
 --
--- Name: alignments alignment_id; Type: DEFAULT; Schema: public; Owner: dan
+-- Name: alignments alignment_id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY alignments ALTER COLUMN alignment_id SET DEFAULT nextval('alignments_alignment_id_seq'::regclass);
 
 
 --
--- Data for Name: alignments; Type: TABLE DATA; Schema: public; Owner: dan
+-- Data for Name: alignments; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY alignments (alignment_id, song_source_num, num_line_in_song, begin_millis, end_millis, text_if_good) FROM stdin;
@@ -610,14 +612,14 @@ COPY alignments (alignment_id, song_source_num, num_line_in_song, begin_millis, 
 
 
 --
--- Name: alignments_alignment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: dan
+-- Name: alignments_alignment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
 SELECT pg_catalog.setval('alignments_alignment_id_seq', 537, true);
 
 
 --
--- Name: idx_alignments_song_source_num_num_line_in_song; Type: INDEX; Schema: public; Owner: dan
+-- Name: idx_alignments_song_source_num_num_line_in_song; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_alignments_song_source_num_num_line_in_song ON alignments USING btree (song_source_num, num_line_in_song);
